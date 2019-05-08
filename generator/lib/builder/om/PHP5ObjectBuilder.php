@@ -30,10 +30,6 @@ class PHP5ObjectBuilder extends ObjectBuilder
 
     protected function addArrayMutator(&$script, Column $col)
     {
-        if (get_class($this->getPlatform()) !== PgsqlPlatform::class) {
-            parent::addArrayMutator($script, $col);
-            return;
-        }
         $clo             = strtolower($col->getName());
         $cloUnserialized = $clo . '_unserialized';
         $this->addMutatorOpen($script, $col);
@@ -5211,11 +5207,6 @@ abstract class " . $this->getClassname() . " extends " . $parentClass . " ";
      **/
     protected function addArrayAccessorBody(&$script, Column $col)
     {
-        if (get_class($this->getPlatform()) !== AxPgsqlPlatform::class) {
-            parent::addArrayAccessorBody($script, $col);
-            return;
-        }
-
         $cfc             = $col->getPhpName();
         $clo             = strtolower($col->getName());
         $cloUnserialized = $clo . '_unserialized';
