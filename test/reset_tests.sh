@@ -35,6 +35,7 @@ fi
 DIRS=`ls $FIXTURES_DIR`
 
 for dir in $DIRS ; do
+    echo "[ $dir ] rebuilding"
     rebuild $dir
 done
 
