@@ -31,20 +31,24 @@ require_once dirname(__FILE__) . '/ColumnDefaultValue.php';
 class Column extends XMLElement
 {
 
-    const DEFAULT_TYPE = "VARCHAR";
+    const DEFAULT_TYPE       = "VARCHAR";
     const DEFAULT_VISIBILITY = 'public';
-    public static $valid_visibilities = array('public', 'protected', 'private');
-
+    public static $valid_visibilities = ['public', 'protected', 'private'];
+    /**
+     * Stores the possible values of an ENUM column.
+     *
+     * @var array
+     */
+    protected $valueSet = [];
     private $name;
     private $description;
-    private $phpName = null;
+    private $phpName   = null;
     private $phpNamingMethod;
     private $isNotNull = false;
     private $size;
     private $namePrefix;
     private $accessorVisibility;
     private $mutatorVisibility;
-
     /**
      * The name to use for the Peer constant that identifies this column.
      * (Will be converted to all-uppercase in the templates.)
@@ -52,50 +56,39 @@ class Column extends XMLElement
      * @var string
      */
     private $peerName;
-
     /**
      * Native PHP type (scalar or class name)
      *
      * @var string "string", "boolean", "int", "double"
      */
     private $phpType;
-
     /**
      * @var Table
      */
     private $parentTable;
-
     private $position;
-    private $isPrimaryKey = false;
-    private $isNodeKey = false;
+    private $isPrimaryKey        = false;
+    private $isNodeKey           = false;
     private $nodeKeySep;
-    private $isNestedSetLeftKey = false;
+    private $isNestedSetLeftKey  = false;
     private $isNestedSetRightKey = false;
-    private $isTreeScopeKey = false;
-    private $isUnique = false;
-    private $isAutoIncrement = false;
-    private $isLazyLoad = false;
+    private $isTreeScopeKey      = false;
+    private $isUnique            = false;
+    private $isAutoIncrement     = false;
+    private $isLazyLoad          = false;
     private $defaultValue;
     private $referrers;
-    private $isPrimaryString = false;
 
     // only one type is supported currently, which assumes the
     // column either contains the classnames or a key to
     // classnames specified in the schema.  Others may be
     // supported later.
+    private $isPrimaryString     = false;
     private $inheritanceType;
     private $isInheritance;
     private $isEnumeratedClasses;
-    private $inheritanceList;
-    private $needsTransactionInPostgres; //maybe this can be retrieved from vendorSpecificInfo
-
-    /**
-     * Stores the possible values of an ENUM column.
-     *
-     * @var array
-     */
-    protected $valueSet = array();
-
+        private $inheritanceList; //maybe this can be retrieved from vendorSpecificInfo
+private $needsTransactionInPostgres;
     /**
      * The domain object associated with this Column.
      *
@@ -118,13 +111,13 @@ class Column extends XMLElement
      *
      * @param Column[]|string[] $columns Either a list of <code>Column</code> objects, or a list of <code>string</code> with column names.
      *
+     * @return string
      * @deprecated Use the Platform::getColumnListDDL() method instead
      *
-     * @return string
      */
     public static function makeList($columns, PropelPlatformInterface $platform)
     {
-        $list = array();
+        $list = [];
         foreach ($columns as $col) {
             if ($col instanceof Column) {
                 $col = $col->getName();
@@ -133,173 +126,6 @@ class Column extends XMLElement
         }
 
         return implode(", ", $list);
-    }
-
-    /**
-     * Sets up the Column object based on the attributes that were passed to loadFromXML().
-     *
-     * @see         parent::loadFromXML()
-     */
-    protected function setupObject()
-    {
-        try {
-            $dom = $this->getAttribute("domain");
-            if ($dom) {
-                $this->getDomain()->copy($this->getTable()->getDatabase()->getDomain($dom));
-            } else {
-                $type = strtoupper($this->getAttribute("type"));
-                if ($type) {
-                    if ($platform = $this->getPlatform()) {
-                        $this->getDomain()->copy($this->getPlatform()->getDomainForType($type));
-                    } else {
-                        // no platform - probably during tests
-                        $this->setDomain(new Domain($type));
-                    }
-                } else {
-                    if ($platform = $this->getPlatform()) {
-                        $this->getDomain()->copy($this->getPlatform()->getDomainForType(self::DEFAULT_TYPE));
-                    } else {
-                        // no platform - probably during tests
-                        $this->setDomain(new Domain(self::DEFAULT_TYPE));
-                    }
-                }
-            }
-
-            $this->name = $this->getAttribute("name");
-            $this->phpName = $this->getAttribute("phpName");
-            $this->phpType = $this->getAttribute("phpType");
-
-            if ($this->getAttribute("prefix", null) !== null) {
-                $this->namePrefix = $this->getAttribute("prefix");
-            } elseif ($this->getTable()->getAttribute('columnPrefix', null) !== null) {
-                $this->namePrefix = $this->getTable()->getAttribute('columnPrefix');
-            } else {
-                $this->namePrefix = '';
-            }
-
-            // Accessor visibility
-            if ($this->getAttribute('accessorVisibility', null) !== null) {
-                $this->setAccessorVisibility($this->getAttribute('accessorVisibility'));
-            } elseif ($this->getTable()->getAttribute('defaultAccessorVisibility', null) !== null) {
-                $this->setAccessorVisibility($this->getTable()->getAttribute('defaultAccessorVisibility'));
-            } elseif ($this->getTable()->getDatabase()->getAttribute('defaultAccessorVisibility', null) !== null) {
-                $this->setAccessorVisibility($this->getTable()->getDatabase()->getAttribute('defaultAccessorVisibility'));
-            } else {
-                $this->setAccessorVisibility(self::DEFAULT_VISIBILITY);
-            }
-
-            // Mutator visibility
-            if ($this->getAttribute('mutatorVisibility', null) !== null) {
-                $this->setMutatorVisibility($this->getAttribute('mutatorVisibility'));
-            } elseif ($this->getTable()->getAttribute('defaultMutatorVisibility', null) !== null) {
-                $this->setMutatorVisibility($this->getTable()->getAttribute('defaultMutatorVisibility'));
-            } elseif ($this->getTable()->getDatabase()->getAttribute('defaultMutatorVisibility', null) !== null) {
-                $this->setMutatorVisibility($this->getTable()->getDatabase()->getAttribute('defaultMutatorVisibility'));
-            } else {
-                $this->setMutatorVisibility(self::DEFAULT_VISIBILITY);
-            }
-
-            $this->peerName = $this->getAttribute("peerName");
-
-            // retrieves the method for converting from specified name to a PHP name, defaulting to parent tables default method
-            $this->phpNamingMethod = $this->getAttribute("phpNamingMethod", $this->parentTable->getDatabase()->getDefaultPhpNamingMethod());
-
-            $this->isPrimaryString = $this->booleanValue($this->getAttribute("primaryString"));
-
-            $this->isPrimaryKey = $this->booleanValue($this->getAttribute("primaryKey"));
-
-            $this->isNodeKey = $this->booleanValue($this->getAttribute("nodeKey"));
-            $this->nodeKeySep = $this->getAttribute("nodeKeySep", ".");
-
-            $this->isNestedSetLeftKey = $this->booleanValue($this->getAttribute("nestedSetLeftKey"));
-            $this->isNestedSetRightKey = $this->booleanValue($this->getAttribute("nestedSetRightKey"));
-            $this->isTreeScopeKey = $this->booleanValue($this->getAttribute("treeScopeKey"));
-
-            $this->isNotNull = ($this->booleanValue($this->getAttribute("required")) || $this->isPrimaryKey); // primary keys are required
-
-            //AutoIncrement/Sequences
-            $this->isAutoIncrement = $this->booleanValue($this->getAttribute("autoIncrement"));
-            $this->isLazyLoad = $this->booleanValue($this->getAttribute("lazyLoad"));
-
-            // Add type, size information to associated Domain object
-            $this->getDomain()->replaceSqlType($this->getAttribute("sqlType"));
-            if (!$this->getAttribute("size") && $this->getDomain()->getType() == 'VARCHAR' && $this->hasPlatform() && !$this->getAttribute("sqlType") && !$this->getPlatform()->supportsVarcharWithoutSize()) {
-                $size = 255;
-            } else {
-                $size = $this->getAttribute("size");
-            }
-            $this->getDomain()->replaceSize($size);
-            $this->getDomain()->replaceScale($this->getAttribute("scale"));
-
-            $defval = $this->getAttribute("defaultValue", $this->getAttribute("default"));
-            if ($defval !== null && strtolower($defval) !== 'null') {
-                $this->getDomain()->setDefaultValue(new ColumnDefaultValue($defval, ColumnDefaultValue::TYPE_VALUE));
-            } elseif ($this->getAttribute("defaultExpr") !== null) {
-                $this->getDomain()->setDefaultValue(new ColumnDefaultValue($this->getAttribute("defaultExpr"), ColumnDefaultValue::TYPE_EXPR));
-            }
-
-            if ($this->getAttribute('valueSet', null) !== null) {
-                if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
-                    $valueSet = str_getcsv($this->getAttribute("valueSet"));
-                } else {
-                    // unfortunately, no good fallback for PHP 5.2
-                    $valueSet = explode(',', $this->getAttribute("valueSet"));
-                }
-                $valueSet = array_map('trim', $valueSet);
-                $this->valueSet = $valueSet;
-            } elseif (preg_match('/enum\((.*?)\)/i', $this->getAttribute('sqlType', ''), $matches)) {
-                if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
-                    $valueSet = str_getcsv($matches['1'], ',', '\'');
-                } else {
-                    // unfortunately, no good fallback for PHP 5.2
-                    $valueSet = array();
-                    foreach (explode(',', $matches['1']) as $value) {
-                        $valueSet[] = trim($value, " '");
-                    }
-                }
-                $this->valueSet = $valueSet;
-            }
-
-            $this->inheritanceType = $this->getAttribute("inheritance");
-            // here we are only checking for 'false', so don't use booleanValue()
-            $this->isInheritance = ($this->inheritanceType !== null && $this->inheritanceType !== "false");
-
-            $this->description = $this->getAttribute("description");
-        } catch (Exception $e) {
-            throw new EngineException("Error setting up column " . var_export($this->getAttribute("name"), true) . ": " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Gets domain for this column, creating a new empty domain object if none is set.
-     *
-     * @return Domain
-     */
-    public function getDomain()
-    {
-        if ($this->domain === null) {
-            $this->domain = new Domain();
-        }
-
-        return $this->domain;
-    }
-
-    /**
-     * Sets domain for this column
-     *
-     * @param Domain $domain
-     */
-    public function setDomain(Domain $domain)
-    {
-        $this->domain = $domain;
-    }
-
-    /**
-     * Returns table.column
-     */
-    public function getFullyQualifiedName()
-    {
-        return ($this->parentTable->getName() . '.' . $this->getName());
     }
 
     /**
@@ -316,6 +142,19 @@ class Column extends XMLElement
     public function setName($newName)
     {
         $this->name = $newName;
+    }
+
+    public static function generatePhpName($name, $phpNamingMethod = PhpNameGenerator::CONV_METHOD_CLEAN, $namePrefix = null)
+    {
+        return NameFactory::generateName(NameFactory::PHP_GENERATOR, [$name, $phpNamingMethod, $namePrefix]);
+    }
+
+    /**
+     * Returns table.column
+     */
+    public function getFullyQualifiedName()
+    {
+        return ($this->parentTable->getName() . '.' . $this->getName());
     }
 
     /**
@@ -345,11 +184,29 @@ class Column extends XMLElement
     /**
      * Set the description for the Table
      *
-     * @param       newDescription description for the Table
+     * @param newDescription description for the Table
      */
     public function setDescription($newDescription)
     {
         $this->description = $newDescription;
+    }
+
+    /**
+     * Get studly version of PHP name.
+     *
+     * The studly name is the PHP name with the first character lowercase.
+     *
+     * @return string
+     */
+    public function getStudlyPhpName()
+    {
+        $phpname = $this->getPhpName();
+        if (strlen($phpname) > 1) {
+            return strtolower(substr($phpname, 0, 1)) . substr($phpname, 1);
+        } else { // 0 or 1 chars (I suppose that's rare)
+
+            return strtolower($phpname);
+        }
     }
 
     /**
@@ -382,24 +239,6 @@ class Column extends XMLElement
             $this->phpName = self::generatePhpName($this->name, $this->phpNamingMethod, $this->namePrefix);
         } else {
             $this->phpName = $phpName;
-        }
-    }
-
-    /**
-     * Get studly version of PHP name.
-     *
-     * The studly name is the PHP name with the first character lowercase.
-     *
-     * @return string
-     */
-    public function getStudlyPhpName()
-    {
-        $phpname = $this->getPhpName();
-        if (strlen($phpname) > 1) {
-            return strtolower(substr($phpname, 0, 1)) . substr($phpname, 1);
-        } else { // 0 or 1 chars (I suppose that's rare)
-
-            return strtolower($phpname);
         }
     }
 
@@ -467,7 +306,7 @@ class Column extends XMLElement
     public function getConstantName()
     {
         $classname = $this->getTable()->getPhpName() . 'Peer';
-        $const = $this->getConstantColumnName();
+        $const     = $this->getConstantColumnName();
 
         return $classname . '::' . $const;
     }
@@ -503,23 +342,6 @@ class Column extends XMLElement
     }
 
     /**
-     * Get type to use in PHP sources.
-     *
-     * If no type has been specified, then uses results of getPhpNative().
-     *
-     * @return string The type name.
-     * @see         getPhpNative()
-     */
-    public function getPhpType()
-    {
-        if ($this->phpType !== null) {
-            return $this->phpType;
-        }
-
-        return $this->getPhpNative();
-    }
-
-    /**
      * Get the location of this column within the table (one-based).
      *
      * @return int value of position.
@@ -548,14 +370,6 @@ class Column extends XMLElement
     }
 
     /**
-     * Get the parent Table of the column
-     */
-    public function getTable()
-    {
-        return $this->parentTable;
-    }
-
-    /**
      * Returns the Name of the table the column is in
      */
     public function getTableName()
@@ -577,7 +391,7 @@ class Column extends XMLElement
             $inh = $inhdata;
             $inh->setColumn($this);
             if ($this->inheritanceList === null) {
-                $this->inheritanceList = array();
+                $this->inheritanceList     = [];
                 $this->isEnumeratedClasses = true;
             }
             $this->inheritanceList[] = $inh;
@@ -600,15 +414,6 @@ class Column extends XMLElement
     }
 
     /**
-     * Determine if this column is a normal property or specifies a
-     * the classes that are represented in the table containing this column.
-     */
-    public function isInheritance()
-    {
-        return $this->isInheritance;
-    }
-
-    /**
      * Determine if possible classes have been enumerated in the xml file.
      */
     public function isEnumeratedClasses()
@@ -617,19 +422,11 @@ class Column extends XMLElement
     }
 
     /**
-     * Return the isNotNull property of the column
-     */
-    public function isNotNull()
-    {
-        return $this->isNotNull;
-    }
-
-    /**
      * Set the isNotNull property of the column
      */
     public function setNotNull($status)
     {
-        $this->isNotNull = (boolean) $status;
+        $this->isNotNull = (boolean)$status;
     }
 
     /**
@@ -643,6 +440,14 @@ class Column extends XMLElement
     }
 
     /**
+     * Return the isNotNull property of the column
+     */
+    public function isNotNull()
+    {
+        return $this->isNotNull;
+    }
+
+    /**
      * Set whether the column is the primary string,
      * i.e. whether its value is the default string representation of the table
      *
@@ -650,7 +455,7 @@ class Column extends XMLElement
      */
     public function setPrimaryString($v)
     {
-        $this->isPrimaryString = (boolean) $v;
+        $this->isPrimaryString = (boolean)$v;
     }
 
     /**
@@ -669,7 +474,7 @@ class Column extends XMLElement
      */
     public function setPrimaryKey($v)
     {
-        $this->isPrimaryKey = (boolean) $v;
+        $this->isPrimaryKey = (boolean)$v;
     }
 
     /**
@@ -685,31 +490,7 @@ class Column extends XMLElement
      */
     public function setNodeKey($nk)
     {
-        $this->isNodeKey = (boolean) $nk;
-    }
-
-    /**
-     * Return true if the column is a node key of a tree
-     */
-    public function isNodeKey()
-    {
-        return $this->isNodeKey;
-    }
-
-    /**
-     * Set if the column is the node key of a tree
-     */
-    public function setNodeKeySep($sep)
-    {
-        $this->nodeKeySep = (string) $sep;
-    }
-
-    /**
-     * Return true if the column is a node key of a tree
-     */
-    public function getNodeKeySep()
-    {
-        return $this->nodeKeySep;
+        $this->isNodeKey = (boolean)$nk;
     }
 
     /**
@@ -717,7 +498,7 @@ class Column extends XMLElement
      */
     public function setNestedSetLeftKey($nslk)
     {
-        $this->isNestedSetLeftKey = (boolean) $nslk;
+        $this->isNestedSetLeftKey = (boolean)$nslk;
     }
 
     /**
@@ -733,7 +514,7 @@ class Column extends XMLElement
      */
     public function setNestedSetRightKey($nsrk)
     {
-        $this->isNestedSetRightKey = (boolean) $nsrk;
+        $this->isNestedSetRightKey = (boolean)$nsrk;
     }
 
     /**
@@ -749,7 +530,7 @@ class Column extends XMLElement
      */
     public function setTreeScopeKey($tsk)
     {
-        $this->isTreeScopeKey = (boolean) $tsk;
+        $this->isTreeScopeKey = (boolean)$tsk;
     }
 
     /**
@@ -803,16 +584,6 @@ class Column extends XMLElement
     }
 
     /**
-     * Whether this column is a part of more than one foreign key.
-     *
-     * @return boolean
-     */
-    public function hasMultipleFK()
-    {
-        return (count($this->getForeignKeys()) > 1);
-    }
-
-    /**
      * Get the foreign key objects for this column (if it is a foreign key or part of a foreign key)
      *
      * @return array
@@ -823,12 +594,22 @@ class Column extends XMLElement
     }
 
     /**
+     * Whether this column is a part of more than one foreign key.
+     *
+     * @return boolean
+     */
+    public function hasMultipleFK()
+    {
+        return (count($this->getForeignKeys()) > 1);
+    }
+
+    /**
      * Adds the foreign key from another table that refers to this column.
      */
     public function addReferrer(ForeignKey $fk)
     {
         if ($this->referrers === null) {
-            $this->referrers = array();
+            $this->referrers = [];
         }
         $this->referrers[] = $fk;
     }
@@ -839,20 +620,20 @@ class Column extends XMLElement
     public function getReferrers()
     {
         if ($this->referrers === null) {
-            $this->referrers = array();
+            $this->referrers = [];
         }
 
         return $this->referrers;
     }
 
-    public function hasReferrers()
-    {
-        return $this->referrers !== null;
-    }
-
     public function hasReferrer(ForeignKey $fk)
     {
         return $this->hasReferrers() && in_array($fk, $this->referrers, true);
+    }
+
+    public function hasReferrers()
+    {
+        return $this->referrers !== null;
     }
 
     public function clearReferrers()
@@ -862,7 +643,7 @@ class Column extends XMLElement
 
     public function clearInheritanceList()
     {
-        $this->inheritanceList = array();
+        $this->inheritanceList = [];
     }
 
     /**
@@ -879,18 +660,13 @@ class Column extends XMLElement
     }
 
     /**
-     * Sets the propel colunm type.
+     * Returns the column PDO type integer for this column's Propel type.
      *
-     * @param string $propelType
-     *
-     * @see         Domain::setType()
+     * @return int The integer value representing PDO type param: e.g. PDO::PARAM_INT
      */
-    public function setType($propelType)
+    public function getPDOType()
     {
-        $this->getDomain()->setType($propelType);
-        if ($propelType == PropelTypes::VARBINARY || $propelType == PropelTypes::LONGVARBINARY || $propelType == PropelTypes::BLOB) {
-            $this->needsTransactionInPostgres = true;
-        }
+        return PropelTypes::getPDOType($this->getType());
     }
 
     /**
@@ -905,34 +681,11 @@ class Column extends XMLElement
     }
 
     /**
-     * Returns the column PDO type integer for this column's Propel type.
-     *
-     * @return int The integer value representing PDO type param: e.g. PDO::PARAM_INT
-     */
-    public function getPDOType()
-    {
-        return PropelTypes::getPDOType($this->getType());
-    }
-
-    /**
      * Returns the column type as given in the schema as an object
      */
     public function getPropelType()
     {
         return $this->getType();
-    }
-
-    public function isDefaultSqlType(PropelPlatformInterface $platform = null)
-    {
-        if (null === $this->domain || null === $this->domain->getSqlType() || null === $platform) {
-            return true;
-        }
-        $defaultSqlType = $platform->getDomainForType($this->getType())->getSqlType();
-        if ($defaultSqlType == $this->getDomain()->getSqlType()) {
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -943,24 +696,6 @@ class Column extends XMLElement
     public function isLobType()
     {
         return PropelTypes::isLobType($this->getType());
-    }
-
-    /**
-     * Utility method to see if the column is text type.
-     */
-    public function isTextType()
-    {
-        return PropelTypes::isTextType($this->getType());
-    }
-
-    /**
-     * Utility method to see if the column is numeric type.
-     *
-     * @return boolean
-     */
-    public function isNumericType()
-    {
-        return PropelTypes::isNumericType($this->getType());
     }
 
     /**
@@ -1004,16 +739,6 @@ class Column extends XMLElement
     }
 
     /**
-     * Sets the list of possible values for an ENUM column
-     *
-     * @param array
-     */
-    public function setValueSet($valueSet)
-    {
-        $this->valueSet = $valueSet;
-    }
-
-    /**
      * Returns the list of possible values for an ENUM column
      *
      * @return array
@@ -1021,6 +746,16 @@ class Column extends XMLElement
     public function getValueSet()
     {
         return $this->valueSet;
+    }
+
+    /**
+     * Sets the list of possible values for an ENUM column
+     *
+     * @param array
+     */
+    public function setValueSet($valueSet)
+    {
+        $this->valueSet = $valueSet;
     }
 
     /**
@@ -1099,6 +834,52 @@ class Column extends XMLElement
         }
     }
 
+    public function isDefaultSqlType(PropelPlatformInterface $platform = null)
+    {
+        if (null === $this->domain || null === $this->domain->getSqlType() || null === $platform) {
+            return true;
+        }
+        $defaultSqlType = $platform->getDomainForType($this->getType())->getSqlType();
+        if ($defaultSqlType == $this->getDomain()->getSqlType()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Determine if this column is a normal property or specifies a
+     * the classes that are represented in the table containing this column.
+     */
+    public function isInheritance()
+    {
+        return $this->isInheritance;
+    }
+
+    /**
+     * Return true if the column is a node key of a tree
+     */
+    public function isNodeKey()
+    {
+        return $this->isNodeKey;
+    }
+
+    /**
+     * Return true if the column is a node key of a tree
+     */
+    public function getNodeKeySep()
+    {
+        return $this->nodeKeySep;
+    }
+
+    /**
+     * Set if the column is the node key of a tree
+     */
+    public function setNodeKeySep($sep)
+    {
+        $this->nodeKeySep = (string)$sep;
+    }
+
     /**
      * Returns the size of the column
      *
@@ -1151,8 +932,8 @@ class Column extends XMLElement
     /**
      * Return a string that will give this column a default value in SQL
      *
-     * @deprecated use Platform::getColumnDefaultValueDDL() instead
      * @return string
+     * @deprecated use Platform::getColumnDefaultValueDDL() instead
      */
     public function getDefaultSetting()
     {
@@ -1169,7 +950,7 @@ class Column extends XMLElement
         $defaultValue = $this->getDefaultValue();
         if ($defaultValue !== null) {
             if ($this->isNumericType()) {
-                $dflt = (float) $defaultValue->getValue();
+                $dflt = (float)$defaultValue->getValue();
             } elseif ($this->isTextType() || $this->getDefaultValue()->isExpression()) {
                 $dflt = "'" . str_replace("'", "\'", $defaultValue->getValue()) . "'";
             } elseif ($this->getType() == PropelTypes::BOOLEAN) {
@@ -1182,6 +963,17 @@ class Column extends XMLElement
         }
 
         return $dflt;
+    }
+
+    /**
+     * Get the default value object for this column.
+     *
+     * @return ColumnDefaultValue
+     * @see         Domain::getDefaultValue()
+     */
+    public function getDefaultValue()
+    {
+        return $this->domain->getDefaultValue();
     }
 
     /**
@@ -1202,14 +994,21 @@ class Column extends XMLElement
     }
 
     /**
-     * Get the default value object for this column.
+     * Utility method to see if the column is numeric type.
      *
-     * @return ColumnDefaultValue
-     * @see         Domain::getDefaultValue()
+     * @return boolean
      */
-    public function getDefaultValue()
+    public function isNumericType()
     {
-        return $this->domain->getDefaultValue();
+        return PropelTypes::isNumericType($this->getType());
+    }
+
+    /**
+     * Utility method to see if the column is text type.
+     */
+    public function isTextType()
+    {
+        return PropelTypes::isTextType($this->getType());
     }
 
     /**
@@ -1221,15 +1020,6 @@ class Column extends XMLElement
     public function getPhpDefaultValue()
     {
         return $this->domain->getPhpDefaultValue();
-    }
-
-    /**
-     * Return auto increment/sequence string for the target database. We need to
-     * pass in the props for the target database!
-     */
-    public function isAutoIncrement()
-    {
-        return $this->isAutoIncrement;
     }
 
     /**
@@ -1263,12 +1053,21 @@ class Column extends XMLElement
     }
 
     /**
+     * Return auto increment/sequence string for the target database. We need to
+     * pass in the props for the target database!
+     */
+    public function isAutoIncrement()
+    {
+        return $this->isAutoIncrement;
+    }
+
+    /**
      * Set the auto increment value.
      * Use isAutoIncrement() to find out if it is set or not.
      */
     public function setAutoIncrement($value)
     {
-        $this->isAutoIncrement = (boolean) $value;
+        $this->isAutoIncrement = (boolean)$value;
     }
 
     /**
@@ -1304,14 +1103,18 @@ class Column extends XMLElement
     }
 
     /**
-     * Return a string representation of the native PHP type which corresponds
-     * to the propel type of this column. Use in the generation of Base objects.
+     * Sets the propel colunm type.
      *
-     * @return string PHP datatype used by propel.
+     * @param string $propelType
+     *
+     * @see         Domain::setType()
      */
-    public function getPhpNative()
+    public function setType($propelType)
     {
-        return PropelTypes::getPhpNative($this->getType());
+        $this->getDomain()->setType($propelType);
+        if ($propelType == PropelTypes::VARBINARY || $propelType == PropelTypes::LONGVARBINARY || $propelType == PropelTypes::BLOB) {
+            $this->needsTransactionInPostgres = true;
+        }
     }
 
     /**
@@ -1323,6 +1126,34 @@ class Column extends XMLElement
     public function isPhpPrimitiveType()
     {
         return PropelTypes::isPhpPrimitiveType($this->getPhpType());
+    }
+
+    /**
+     * Get type to use in PHP sources.
+     *
+     * If no type has been specified, then uses results of getPhpNative().
+     *
+     * @return string The type name.
+     * @see         getPhpNative()
+     */
+    public function getPhpType()
+    {
+        if ($this->phpType !== null) {
+            return $this->phpType;
+        }
+
+        return $this->getPhpNative();
+    }
+
+    /**
+     * Return a string representation of the native PHP type which corresponds
+     * to the propel type of this column. Use in the generation of Base objects.
+     *
+     * @return string PHP datatype used by propel.
+     */
+    public function getPhpNative()
+    {
+        return PropelTypes::getPhpNative($this->getType());
     }
 
     /**
@@ -1347,21 +1178,6 @@ class Column extends XMLElement
         return PropelTypes::isPhpObjectType($this->getPhpType());
     }
 
-    /**
-     * Get the platform/adapter impl.
-     *
-     * @return PropelPlatformInterface
-     */
-    public function getPlatform()
-    {
-        return $this->getTable()->getDatabase()->getPlatform();
-    }
-
-    public function hasPlatform()
-    {
-        return null !== $this->getTable() && null !== $this->getTable()->getDatabase() && null !== $this->getTable()->getDatabase()->getPlatform();
-    }
-
     public function getValidator()
     {
         foreach ($this->getTable()->getValidators() as $validator) {
@@ -1376,8 +1192,185 @@ class Column extends XMLElement
         $this->referrers = null;
     }
 
-    public static function generatePhpName($name, $phpNamingMethod = PhpNameGenerator::CONV_METHOD_CLEAN, $namePrefix = null)
+    /**
+     * Sets up the Column object based on the attributes that were passed to loadFromXML().
+     *
+     * @see         parent::loadFromXML()
+     */
+    protected function setupObject()
     {
-        return NameFactory::generateName(NameFactory::PHP_GENERATOR, array($name, $phpNamingMethod, $namePrefix));
+        try {
+            $dom = $this->getAttribute("domain");
+            if ($dom) {
+                $this->getDomain()->copy($this->getTable()->getDatabase()->getDomain($dom));
+            } else {
+                $type = strtoupper($this->getAttribute("type"));
+                if ($type) {
+                    if ($platform = $this->getPlatform()) {
+                        $this->getDomain()->copy($this->getPlatform()->getDomainForType($type));
+                    } else {
+                        // no platform - probably during tests
+                        $this->setDomain(new Domain($type));
+                    }
+                } else {
+                    if ($platform = $this->getPlatform()) {
+                        $this->getDomain()->copy($this->getPlatform()->getDomainForType(self::DEFAULT_TYPE));
+                    } else {
+                        // no platform - probably during tests
+                        $this->setDomain(new Domain(self::DEFAULT_TYPE));
+                    }
+                }
+            }
+
+            $this->name    = $this->getAttribute("name");
+            $this->phpName = $this->getAttribute("phpName");
+            $this->phpType = $this->getAttribute("phpType");
+
+            if ($this->getAttribute("prefix", null) !== null) {
+                $this->namePrefix = $this->getAttribute("prefix");
+            } elseif ($this->getTable()->getAttribute('columnPrefix', null) !== null) {
+                $this->namePrefix = $this->getTable()->getAttribute('columnPrefix');
+            } else {
+                $this->namePrefix = '';
+            }
+
+            // Accessor visibility
+            if ($this->getAttribute('accessorVisibility', null) !== null) {
+                $this->setAccessorVisibility($this->getAttribute('accessorVisibility'));
+            } elseif ($this->getTable()->getAttribute('defaultAccessorVisibility', null) !== null) {
+                $this->setAccessorVisibility($this->getTable()->getAttribute('defaultAccessorVisibility'));
+            } elseif ($this->getTable()->getDatabase()->getAttribute('defaultAccessorVisibility', null) !== null) {
+                $this->setAccessorVisibility($this->getTable()->getDatabase()->getAttribute('defaultAccessorVisibility'));
+            } else {
+                $this->setAccessorVisibility(self::DEFAULT_VISIBILITY);
+            }
+
+            // Mutator visibility
+            if ($this->getAttribute('mutatorVisibility', null) !== null) {
+                $this->setMutatorVisibility($this->getAttribute('mutatorVisibility'));
+            } elseif ($this->getTable()->getAttribute('defaultMutatorVisibility', null) !== null) {
+                $this->setMutatorVisibility($this->getTable()->getAttribute('defaultMutatorVisibility'));
+            } elseif ($this->getTable()->getDatabase()->getAttribute('defaultMutatorVisibility', null) !== null) {
+                $this->setMutatorVisibility($this->getTable()->getDatabase()->getAttribute('defaultMutatorVisibility'));
+            } else {
+                $this->setMutatorVisibility(self::DEFAULT_VISIBILITY);
+            }
+
+            $this->peerName = $this->getAttribute("peerName");
+
+            // retrieves the method for converting from specified name to a PHP name, defaulting to parent tables default method
+            $this->phpNamingMethod = $this->getAttribute("phpNamingMethod", $this->parentTable->getDatabase()->getDefaultPhpNamingMethod());
+
+            $this->isPrimaryString = $this->booleanValue($this->getAttribute("primaryString"));
+
+            $this->isPrimaryKey = $this->booleanValue($this->getAttribute("primaryKey"));
+
+            $this->isNodeKey  = $this->booleanValue($this->getAttribute("nodeKey"));
+            $this->nodeKeySep = $this->getAttribute("nodeKeySep", ".");
+
+            $this->isNestedSetLeftKey  = $this->booleanValue($this->getAttribute("nestedSetLeftKey"));
+            $this->isNestedSetRightKey = $this->booleanValue($this->getAttribute("nestedSetRightKey"));
+            $this->isTreeScopeKey      = $this->booleanValue($this->getAttribute("treeScopeKey"));
+
+            $this->isNotNull = ($this->booleanValue($this->getAttribute("required")) || $this->isPrimaryKey); // primary keys are required
+
+            //AutoIncrement/Sequences
+            $this->isAutoIncrement = $this->booleanValue($this->getAttribute("autoIncrement"));
+            $this->isLazyLoad      = $this->booleanValue($this->getAttribute("lazyLoad"));
+
+            // Add type, size information to associated Domain object
+            $this->getDomain()->replaceSqlType($this->getAttribute("sqlType"));
+            if (!$this->getAttribute("size") && $this->getDomain()->getType() == 'VARCHAR' && $this->hasPlatform() && !$this->getAttribute("sqlType") && !$this->getPlatform()->supportsVarcharWithoutSize()) {
+                $size = 255;
+            } else {
+                $size = $this->getAttribute("size");
+            }
+            $this->getDomain()->replaceSize($size);
+            $this->getDomain()->replaceScale($this->getAttribute("scale"));
+
+            $defval = $this->getAttribute("defaultValue", $this->getAttribute("default"));
+            if ($defval !== null && strtolower($defval) !== 'null') {
+                $this->getDomain()->setDefaultValue(new ColumnDefaultValue($defval, ColumnDefaultValue::TYPE_VALUE));
+            } elseif ($this->getAttribute("defaultExpr") !== null) {
+                $this->getDomain()->setDefaultValue(new ColumnDefaultValue($this->getAttribute("defaultExpr"), ColumnDefaultValue::TYPE_EXPR));
+            }
+
+            if ($this->getAttribute('valueSet', null) !== null) {
+                if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
+                    $valueSet = str_getcsv($this->getAttribute("valueSet"));
+                } else {
+                    // unfortunately, no good fallback for PHP 5.2
+                    $valueSet = explode(',', $this->getAttribute("valueSet"));
+                }
+                $valueSet       = array_map('trim', $valueSet);
+                $this->valueSet = $valueSet;
+            } elseif (preg_match('/enum\((.*?)\)/i', $this->getAttribute('sqlType', ''), $matches)) {
+                if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
+                    $valueSet = str_getcsv($matches['1'], ',', '\'');
+                } else {
+                    // unfortunately, no good fallback for PHP 5.2
+                    $valueSet = [];
+                    foreach (explode(',', $matches['1']) as $value) {
+                        $valueSet[] = trim($value, " '");
+                    }
+                }
+                $this->valueSet = $valueSet;
+            }
+
+            $this->inheritanceType = $this->getAttribute("inheritance");
+            // here we are only checking for 'false', so don't use booleanValue()
+            $this->isInheritance = ($this->inheritanceType !== null && $this->inheritanceType !== "false");
+
+            $this->description = $this->getAttribute("description");
+        } catch (Exception $e) {
+            throw new EngineException("Error setting up column " . var_export($this->getAttribute("name"), true) . ": " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Gets domain for this column, creating a new empty domain object if none is set.
+     *
+     * @return Domain
+     */
+    public function getDomain()
+    {
+        if ($this->domain === null) {
+            $this->domain = new Domain();
+        }
+
+        return $this->domain;
+    }
+
+    /**
+     * Sets domain for this column
+     *
+     * @param Domain $domain
+     */
+    public function setDomain(Domain $domain)
+    {
+        $this->domain = $domain;
+    }
+
+    /**
+     * Get the parent Table of the column
+     */
+    public function getTable()
+    {
+        return $this->parentTable;
+    }
+
+    /**
+     * Get the platform/adapter impl.
+     *
+     * @return PropelPlatformInterface
+     */
+    public function getPlatform()
+    {
+        return $this->getTable()->getDatabase()->getPlatform();
+    }
+
+    public function hasPlatform()
+    {
+        return null !== $this->getTable() && null !== $this->getTable()->getDatabase() && null !== $this->getTable()->getDatabase()->getPlatform();
     }
 }

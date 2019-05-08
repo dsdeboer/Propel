@@ -28,47 +28,37 @@ class SqliteSchemaParser extends BaseSchemaParser
      *
      * @var        array
      */
-    private static $sqliteTypeMap = array(
-        'tinyint' => PropelTypes::TINYINT,
-        'smallint' => PropelTypes::SMALLINT,
-        'mediumint' => PropelTypes::SMALLINT,
-        'int' => PropelTypes::INTEGER,
-        'integer' => PropelTypes::INTEGER,
-        'bigint' => PropelTypes::BIGINT,
-        'int24' => PropelTypes::BIGINT,
-        'real' => PropelTypes::REAL,
-        'float' => PropelTypes::FLOAT,
-        'decimal' => PropelTypes::DECIMAL,
-        'numeric' => PropelTypes::NUMERIC,
-        'double' => PropelTypes::DOUBLE,
-        'char' => PropelTypes::CHAR,
-        'varchar' => PropelTypes::VARCHAR,
-        'date' => PropelTypes::DATE,
-        'time' => PropelTypes::TIME,
-        'year' => PropelTypes::INTEGER,
-        'datetime' => PropelTypes::TIMESTAMP,
-        'timestamp' => PropelTypes::TIMESTAMP,
-        'tinyblob' => PropelTypes::BINARY,
-        'blob' => PropelTypes::BLOB,
+    private static $sqliteTypeMap = [
+        'tinyint'    => PropelTypes::TINYINT,
+        'smallint'   => PropelTypes::SMALLINT,
+        'mediumint'  => PropelTypes::SMALLINT,
+        'int'        => PropelTypes::INTEGER,
+        'integer'    => PropelTypes::INTEGER,
+        'bigint'     => PropelTypes::BIGINT,
+        'int24'      => PropelTypes::BIGINT,
+        'real'       => PropelTypes::REAL,
+        'float'      => PropelTypes::FLOAT,
+        'decimal'    => PropelTypes::DECIMAL,
+        'numeric'    => PropelTypes::NUMERIC,
+        'double'     => PropelTypes::DOUBLE,
+        'char'       => PropelTypes::CHAR,
+        'varchar'    => PropelTypes::VARCHAR,
+        'date'       => PropelTypes::DATE,
+        'time'       => PropelTypes::TIME,
+        'year'       => PropelTypes::INTEGER,
+        'datetime'   => PropelTypes::TIMESTAMP,
+        'timestamp'  => PropelTypes::TIMESTAMP,
+        'tinyblob'   => PropelTypes::BINARY,
+        'blob'       => PropelTypes::BLOB,
         'mediumblob' => PropelTypes::BLOB,
-        'longblob' => PropelTypes::BLOB,
-        'longtext' => PropelTypes::CLOB,
-        'tinytext' => PropelTypes::VARCHAR,
+        'longblob'   => PropelTypes::BLOB,
+        'longtext'   => PropelTypes::CLOB,
+        'tinytext'   => PropelTypes::VARCHAR,
         'mediumtext' => PropelTypes::LONGVARCHAR,
-        'text' => PropelTypes::LONGVARCHAR,
-        'enum' => PropelTypes::CHAR,
-        'set' => PropelTypes::CHAR,
-    );
-
-    /**
-     * Gets a type mapping from native types to Propel types
-     *
-     * @return array
-     */
-    protected function getTypeMapping()
-    {
-        return self::$sqliteTypeMap;
-    }
+        'text'       => PropelTypes::LONGVARCHAR,
+        'enum'       => PropelTypes::CHAR,
+        'set'        => PropelTypes::CHAR,
+    ];
 
     /**
      *
@@ -78,7 +68,7 @@ class SqliteSchemaParser extends BaseSchemaParser
         $stmt = $this->dbh->query("SELECT name FROM sqlite_master WHERE type='table' UNION ALL SELECT name FROM sqlite_temp_master WHERE type='table' ORDER BY name;");
 
         // First load the tables (important that this happen before filling out details of tables)
-        $tables = array();
+        $tables = [];
         while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
             $name = $row[0];
             if ($name == $this->getMigrationTable()) {
@@ -103,10 +93,10 @@ class SqliteSchemaParser extends BaseSchemaParser
         return count($tables);
     }
 
-    /**
+/**
      * Adds Columns to the specified table.
      *
-     * @param Table  $table   The Table model class to add columns to.
+     * @param Table $table The Table model class to add columns to.
      * @param string $version The database version.
      */
     protected function addColumns(Table $table)
@@ -117,15 +107,15 @@ class SqliteSchemaParser extends BaseSchemaParser
 
             $name = $row['name'];
 
-            $fulltype = $row['type'];
-            $size = null;
+            $fulltype  = $row['type'];
+            $size      = null;
             $precision = null;
-            $scale = null;
+            $scale     = null;
 
             if (preg_match('/^([^\(]+)\(\s*(\d+)\s*,\s*(\d+)\s*\)$/', $fulltype, $matches)) {
-                $type = $matches[1];
+                $type      = $matches[1];
                 $precision = $matches[2];
-                $scale = $matches[3]; // aka precision
+                $scale     = $matches[3]; // aka precision
             } elseif (preg_match('/^([^\(]+)\(\s*(\d+)\s*\)$/', $fulltype, $matches)) {
                 $type = $matches[1];
                 $size = $matches[2];
@@ -135,8 +125,8 @@ class SqliteSchemaParser extends BaseSchemaParser
             // If column is primary key and of type INTEGER, it is auto increment
             // See: http://sqlite.org/faq.html#q1
             $autoincrement = ($row['pk'] == 1 && strtolower($type) == 'integer');
-            $not_null = $row['notnull'];
-            $default = $row['dflt_value'];
+            $not_null      = $row['notnull'];
+            $default       = $row['dflt_value'];
 
             $propelType = $this->getMappedPropelType(strtolower($type));
             if (!$propelType) {
@@ -163,9 +153,9 @@ class SqliteSchemaParser extends BaseSchemaParser
 
             $table->addColumn($column);
         }
-    } // addColumn()
+    }
 
-    /**
+        /**
      * Load indexes for this table
      */
     protected function addIndexes(Table $table)
@@ -174,7 +164,7 @@ class SqliteSchemaParser extends BaseSchemaParser
 
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
-            $name = $row['name'];
+            $name  = $row['name'];
             $index = new Index($name);
 
             $stmt2 = $this->dbh->query("PRAGMA index_info('" . $name . "')");
@@ -185,5 +175,15 @@ class SqliteSchemaParser extends BaseSchemaParser
 
             $table->addIndex($index);
         }
+    } // addColumn()
+
+    /**
+     * Gets a type mapping from native types to Propel types
+     *
+     * @return array
+     */
+    protected function getTypeMapping()
+    {
+        return self::$sqliteTypeMap;
     }
 }

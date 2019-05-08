@@ -21,13 +21,13 @@ class AggregateColumnBehavior extends Behavior
 {
 
     // default parameters value
-    protected $parameters = array(
+    protected $parameters = [
         'name'           => null,
         'expression'     => null,
         'condition'      => null,
         'foreign_table'  => null,
         'foreign_schema' => null,
-    );
+    ];
 
     /**
      * Add the aggregate key to the current table
@@ -41,10 +41,10 @@ class AggregateColumnBehavior extends Behavior
 
         // add the aggregate column if not present
         if (!$this->getTable()->containsColumn($columnName)) {
-            $column = $this->getTable()->addColumn(array(
-                'name'    => $columnName,
-                'type'    => 'INTEGER',
-            ));
+            $column = $this->getTable()->addColumn([
+                'name' => $columnName,
+                'type' => 'INTEGER',
+            ]);
         }
 
         // add a behavior in the foreign table to autoupdate the aggregate column
@@ -53,72 +53,15 @@ class AggregateColumnBehavior extends Behavior
             $relationBehavior = new AggregateColumnRelationBehavior();
             $relationBehavior->setName('aggregate_column_relation');
             $foreignKey = $this->getForeignKey();
-            $relationBehavior->addParameter(array('name' => 'foreign_table', 'value' => $table->getName()));
-            $relationBehavior->addParameter(array('name' => 'update_method', 'value' => 'update' . $this->getColumn()->getPhpName()));
+            $relationBehavior->addParameter(['name' => 'foreign_table', 'value' => $table->getName()]);
+            $relationBehavior->addParameter(['name' => 'update_method', 'value' => 'update' . $this->getColumn()->getPhpName()]);
             $foreignTable->addBehavior($relationBehavior);
         }
     }
 
-    public function objectMethods($builder)
-    {
-        if (!$foreignTableName = $this->getParameter('foreign_table')) {
-            throw new InvalidArgumentException(sprintf('You must define a \'foreign_table\' parameter for the \'aggregate_column\' behavior in the \'%s\' table', $this->getTable()->getName()));
-        }
-        $script = '';
-        $script .= $this->addObjectCompute();
-        $script .= $this->addObjectUpdate();
-
-        return $script;
-    }
-
-    protected function addObjectCompute()
-    {
-        $conditions = array();
-        if ($this->getParameter('condition')) {
-            $conditions[] = $this->getParameter('condition');
-        }
-
-        $bindings = array();
-        $database = $this->getTable()->getDatabase();
-        foreach ($this->getForeignKey()->getColumnObjectsMapping() as $index => $columnReference) {
-            $conditions[] = $columnReference['local']->getFullyQualifiedName() . ' = :p' . ($index + 1);
-            $bindings[$index + 1] = $columnReference['foreign']->getPhpName();
-        }
-        $tableName = $database->getTablePrefix() . $this->getParameter('foreign_table');
-        if ($database->getPlatform()->supportsSchemas() && $this->getParameter('foreign_schema')) {
-            $tableName = $this->getParameter('foreign_schema') . '.' . $tableName;
-        }
-        $sql = sprintf('SELECT %s FROM %s WHERE %s',
-            $this->getParameter('expression'),
-            $database->getPlatform()->quoteIdentifier($tableName),
-            implode(' AND ', $conditions)
-        );
-
-        return $this->renderTemplate('objectCompute', array(
-            'column'   => $this->getColumn(),
-            'sql'      => $sql,
-            'bindings' => $bindings,
-        ));
-    }
-
-    protected function addObjectUpdate()
-    {
-        return $this->renderTemplate('objectUpdate', array(
-            'column'  => $this->getColumn(),
-        ));
-    }
-
-    public function postSave($builder)
-    {
-        return $this->renderTemplate('objectPostSave', array(
-                'column'     => $this->getColumn(),
-                'columnRefk' => $builder->getRefFKCollVarName($this->getForeignKey())
-        ));
-    }
-
     protected function getForeignTable()
     {
-        $database = $this->getTable()->getDatabase();
+        $database  = $this->getTable()->getDatabase();
         $tableName = $database->getTablePrefix() . $this->getParameter('foreign_table');
         if ($database->getPlatform()->supportsSchemas() && $this->getParameter('foreign_schema')) {
             $tableName = $this->getParameter('foreign_schema') . '.' . $tableName;
@@ -133,7 +76,8 @@ class AggregateColumnBehavior extends Behavior
         // let's infer the relation from the foreign table
         $fks = $foreignTable->getForeignKeysReferencingTable($this->getTable()->getName());
         if (!$fks) {
-            throw new InvalidArgumentException(sprintf('You must define a foreign key to the \'%s\' table in the \'%s\' table to enable the \'aggregate_column\' behavior', $this->getTable()->getName(), $foreignTable->getName()));
+            throw new InvalidArgumentException(sprintf('You must define a foreign key to the \'%s\' table in the \'%s\' table to enable the \'aggregate_column\' behavior',
+                $this->getTable()->getName(), $foreignTable->getName()));
         }
 
         // FIXME doesn't work when more than one fk to the same table
@@ -143,5 +87,63 @@ class AggregateColumnBehavior extends Behavior
     protected function getColumn()
     {
         return $this->getTable()->getColumn($this->getParameter('name'));
+    }
+
+    public function objectMethods($builder)
+    {
+        if (!$foreignTableName = $this->getParameter('foreign_table')) {
+            throw new InvalidArgumentException(sprintf('You must define a \'foreign_table\' parameter for the \'aggregate_column\' behavior in the \'%s\' table',
+                $this->getTable()->getName()));
+        }
+        $script = '';
+        $script .= $this->addObjectCompute();
+        $script .= $this->addObjectUpdate();
+
+        return $script;
+    }
+
+    protected function addObjectCompute()
+    {
+        $conditions = [];
+        if ($this->getParameter('condition')) {
+            $conditions[] = $this->getParameter('condition');
+        }
+
+        $bindings = [];
+        $database = $this->getTable()->getDatabase();
+        foreach ($this->getForeignKey()->getColumnObjectsMapping() as $index => $columnReference) {
+            $conditions[]         = $columnReference['local']->getFullyQualifiedName() . ' = :p' . ($index + 1);
+            $bindings[$index + 1] = $columnReference['foreign']->getPhpName();
+        }
+        $tableName = $database->getTablePrefix() . $this->getParameter('foreign_table');
+        if ($database->getPlatform()->supportsSchemas() && $this->getParameter('foreign_schema')) {
+            $tableName = $this->getParameter('foreign_schema') . '.' . $tableName;
+        }
+        $sql = sprintf('SELECT %s FROM %s WHERE %s',
+            $this->getParameter('expression'),
+            $database->getPlatform()->quoteIdentifier($tableName),
+            implode(' AND ', $conditions)
+        );
+
+        return $this->renderTemplate('objectCompute', [
+            'column'   => $this->getColumn(),
+            'sql'      => $sql,
+            'bindings' => $bindings,
+        ]);
+    }
+
+    protected function addObjectUpdate()
+    {
+        return $this->renderTemplate('objectUpdate', [
+            'column' => $this->getColumn(),
+        ]);
+    }
+
+    public function postSave($builder)
+    {
+        return $this->renderTemplate('objectPostSave', [
+            'column'     => $this->getColumn(),
+            'columnRefk' => $builder->getRefFKCollVarName($this->getForeignKey())
+        ]);
     }
 }

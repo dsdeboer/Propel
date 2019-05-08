@@ -21,59 +21,7 @@ class VersionableBehaviorQueryBuilderModifier
     public function __construct(VersionableBehavior $behavior)
     {
         $this->behavior = $behavior;
-        $this->table = $behavior->getTable();
-    }
-
-    protected function getParameter($key)
-    {
-        return $this->behavior->getParameter($key);
-    }
-
-    protected function getColumnAttribute($name = 'version_column')
-    {
-        return strtolower($this->behavior->getColumnForParameter($name)->getName());
-    }
-
-    protected function getColumnPhpName($name = 'version_column')
-    {
-        return $this->behavior->getColumnForParameter($name)->getPhpName();
-    }
-
-    protected function getVersionQueryClassName()
-    {
-        return $this->builder->getNewStubQueryBuilder($this->behavior->getVersionTable())->getClassname();
-    }
-
-    protected function setBuilder($builder)
-    {
-        $this->builder = $builder;
-        $this->objectClassname = $builder->getStubObjectBuilder()->getClassname();
-        $this->queryClassname = $builder->getStubQueryBuilder()->getClassname();
-        $this->peerClassname = $builder->getStubPeerBuilder()->getClassname();
-    }
-
-    /**
-     * Get the getter of the column of the behavior
-     *
-     * @param string $name
-     *
-     * @return string The related getter, e.g. 'getVersion'
-     */
-    protected function getColumnGetter($name = 'version_column')
-    {
-        return 'get' . $this->getColumnPhpName($name);
-    }
-
-    /**
-     * Get the setter of the column of the behavior
-     *
-     * @param string $name
-     *
-     * @return string The related setter, e.g. 'setVersion'
-     */
-    protected function getColumnSetter($name = 'version_column')
-    {
-        return 'set' . $this->getColumnPhpName($name);
+        $this->table    = $behavior->getTable();
     }
 
     public function queryMethods($builder)
@@ -86,6 +34,19 @@ class VersionableBehaviorQueryBuilderModifier
         }
 
         return $script;
+    }
+
+    protected function setBuilder($builder)
+    {
+        $this->builder         = $builder;
+        $this->objectClassname = $builder->getStubObjectBuilder()->getClassname();
+        $this->queryClassname  = $builder->getStubQueryBuilder()->getClassname();
+        $this->peerClassname   = $builder->getStubPeerBuilder()->getClassname();
+    }
+
+    protected function getParameter($key)
+    {
+        return $this->behavior->getParameter($key);
     }
 
     protected function addFilterByVersion(&$script)
@@ -119,5 +80,44 @@ public function orderByVersion(\$order = Criteria::ASC)
     return \$this->orderBy('{$this->getColumnPhpName()}', \$order);
 }
 ";
+    }
+
+    protected function getColumnAttribute($name = 'version_column')
+    {
+        return strtolower($this->behavior->getColumnForParameter($name)->getName());
+    }
+
+    protected function getVersionQueryClassName()
+    {
+        return $this->builder->getNewStubQueryBuilder($this->behavior->getVersionTable())->getClassname();
+    }
+
+    /**
+     * Get the getter of the column of the behavior
+     *
+     * @param string $name
+     *
+     * @return string The related getter, e.g. 'getVersion'
+     */
+    protected function getColumnGetter($name = 'version_column')
+    {
+        return 'get' . $this->getColumnPhpName($name);
+    }
+
+    protected function getColumnPhpName($name = 'version_column')
+    {
+        return $this->behavior->getColumnForParameter($name)->getPhpName();
+    }
+
+    /**
+     * Get the setter of the column of the behavior
+     *
+     * @param string $name
+     *
+     * @return string The related setter, e.g. 'setVersion'
+     */
+    protected function getColumnSetter($name = 'version_column')
+    {
+        return 'set' . $this->getColumnPhpName($name);
     }
 }

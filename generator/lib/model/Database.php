@@ -29,44 +29,7 @@ require_once dirname(__FILE__) . '/Behavior.php';
 class Database extends ScopedElement
 {
 
-    private $platform;
-
-    /**
-     * @var Table[]
-     */
-    private $tableList = array();
-
-    private $name;
-
-    private $baseClass;
-    private $basePeer;
-    private $defaultIdMethod;
-    private $defaultPhpNamingMethod;
-    private $defaultTranslateMethod;
-
-    /**
-     * @var AppData
-     */
-    private $dbParent;
-
-    /**
-     * @var Table[]
-     */
-    private $tablesByName = array();
-
-    /**
-     * @var Table[]
-     */
-    private $tablesByLowercaseName = array();
-
-    /**
-     * @var Table[]
-     */
-    private $tablesByPhpName = array();
-
-    private $heavyIndexing;
     protected $tablePrefix = '';
-
     /**
      * The default string format for objects based on this database
      * (e.g. 'XML', 'YAML', 'CSV', 'JSON')
@@ -74,15 +37,41 @@ class Database extends ScopedElement
      * @var       string
      */
     protected $defaultStringFormat;
-
-    private $domainMap = array();
-
     /**
      * List of behaviors registered for this table
      *
      * @var Behavior[]
      */
-    protected $behaviors = array();
+    protected $behaviors = [];
+    private $platform;
+    /**
+     * @var Table[]
+     */
+    private $tableList = [];
+    private $name;
+    private $baseClass;
+    private $basePeer;
+    private $defaultIdMethod;
+    private $defaultPhpNamingMethod;
+    private $defaultTranslateMethod;
+    /**
+     * @var AppData
+     */
+    private $dbParent;
+    /**
+     * @var Table[]
+     */
+    private $tablesByName = [];
+    /**
+     * @var Table[]
+     */
+    private $tablesByLowercaseName = [];
+    /**
+     * @var Table[]
+     */
+    private $tablesByPhpName = [];
+    private   $heavyIndexing;
+    private $domainMap = [];
 
     /**
      * Constructs a new Database object.
@@ -92,25 +81,6 @@ class Database extends ScopedElement
     public function __construct($name = null)
     {
         $this->name = $name;
-    }
-
-    /**
-     * Sets up the Database object based on the attributes that were passed to loadFromXML().
-     *
-     * @see        parent::loadFromXML()
-     */
-    protected function setupObject()
-    {
-        parent::setupObject();
-        $this->name = $this->getAttribute("name");
-        $this->baseClass = $this->getAttribute("baseClass");
-        $this->basePeer = $this->getAttribute("basePeer");
-        $this->defaultIdMethod = $this->getAttribute("defaultIdMethod", IDMethod::NATIVE);
-        $this->defaultPhpNamingMethod = $this->getAttribute("defaultPhpNamingMethod", NameGenerator::CONV_METHOD_UNDERSCORE);
-        $this->defaultTranslateMethod = $this->getAttribute("defaultTranslateMethod", Validator::TRANSLATE_NONE);
-        $this->heavyIndexing = $this->booleanValue($this->getAttribute("heavyIndexing"));
-        $this->tablePrefix = $this->getAttribute('tablePrefix', $this->getBuildProperty('tablePrefix'));
-        $this->defaultStringFormat = $this->getAttribute('defaultStringFormat', 'YAML');
     }
 
     /**
@@ -242,13 +212,13 @@ class Database extends ScopedElement
     }
 
     /**
-     * Set the default string format for ActiveRecord objects in this Db.
+     * Set the value of defaultTranslateMethod.
      *
-     * @param string $defaultStringFormat Any of 'XML', 'YAML', 'JSON', or 'CSV'
+     * @param string $v The default translate method to use.
      */
-    public function setDefaultStringFormat($defaultStringFormat)
+    public function setDefaultTranslateMethod($v)
     {
-        $this->defaultStringFormat = $defaultStringFormat;
+        $this->defaultTranslateMethod = $v;
     }
 
     /**
@@ -262,13 +232,13 @@ class Database extends ScopedElement
     }
 
     /**
-     * Set the value of defaultTranslateMethod.
+     * Set the default string format for ActiveRecord objects in this Db.
      *
-     * @param string $v The default translate method to use.
+     * @param string $defaultStringFormat Any of 'XML', 'YAML', 'JSON', or 'CSV'
      */
-    public function setDefaultTranslateMethod($v)
+    public function setDefaultStringFormat($defaultStringFormat)
     {
-        $this->defaultTranslateMethod = $v;
+        $this->defaultStringFormat = $defaultStringFormat;
     }
 
     /**
@@ -301,17 +271,7 @@ class Database extends ScopedElement
      */
     public function setHeavyIndexing($v)
     {
-        $this->heavyIndexing = (boolean) $v;
-    }
-
-    /**
-     * Return the list of all tables
-     *
-     * @return Table[]
-     */
-    public function getTables()
-    {
-        return $this->tableList;
+        $this->heavyIndexing = (boolean)$v;
     }
 
     /**
@@ -338,7 +298,7 @@ class Database extends ScopedElement
      */
     public function getTablesForSql()
     {
-        $tables = array();
+        $tables = [];
         foreach ($this->tableList as $table) {
             if (!$table->isSkipSql()) {
                 $tables [] = $table;
@@ -349,26 +309,9 @@ class Database extends ScopedElement
     }
 
     /**
-     * Check whether the database has a table.
-     *
-     * @param string  $name            the name of the table (e.g. 'my_table')
-     * @param boolean $caseInsensitive Whether the check is case insensitive. False by default.
-     *
-     * @return boolean
-     */
-    public function hasTable($name, $caseInsensitive = false)
-    {
-        if ($caseInsensitive) {
-            return array_key_exists(strtolower($name), $this->tablesByLowercaseName);
-        } else {
-            return array_key_exists($name, $this->tablesByName);
-        }
-    }
-
-    /**
      * Return the table with the specified name.
      *
-     * @param string  $name            The name of the table (e.g. 'my_table')
+     * @param string $name The name of the table (e.g. 'my_table')
      * @param boolean $caseInsensitive Whether the check is case insensitive. False by default.
      *
      * @return Table a Table object or null if it doesn't exist
@@ -384,6 +327,23 @@ class Database extends ScopedElement
         }
 
         return null; // just to be explicit
+    }
+
+    /**
+     * Check whether the database has a table.
+     *
+     * @param string $name the name of the table (e.g. 'my_table')
+     * @param boolean $caseInsensitive Whether the check is case insensitive. False by default.
+     *
+     * @return boolean
+     */
+    public function hasTable($name, $caseInsensitive = false)
+    {
+        if ($caseInsensitive) {
+            return array_key_exists(strtolower($name), $this->tablesByLowercaseName);
+        } else {
+            return array_key_exists($name, $this->tablesByName);
+        }
     }
 
     /**
@@ -428,10 +388,10 @@ class Database extends ScopedElement
             if ($tbl->getSchema() === null) {
                 $tbl->setSchema($this->getSchema());
             }
-            $this->tableList[] = $tbl;
-            $this->tablesByName[$tbl->getName()] = $tbl;
+            $this->tableList[]                                        = $tbl;
+            $this->tablesByName[$tbl->getName()]                      = $tbl;
             $this->tablesByLowercaseName[strtolower($tbl->getName())] = $tbl;
-            $this->tablesByPhpName[$tbl->getPhpName()] = $tbl;
+            $this->tablesByPhpName[$tbl->getPhpName()]                = $tbl;
             if (strpos($tbl->getNamespace(), '\\') === 0) {
                 $tbl->setNamespace(substr($tbl->getNamespace(), 1));
             } elseif ($namespace = $this->getNamespace()) {
@@ -462,16 +422,6 @@ class Database extends ScopedElement
     public function setAppData(AppData $parent)
     {
         $this->dbParent = $parent;
-    }
-
-    /**
-     * Get the parent of the table
-     *
-     * @return AppData
-     */
-    public function getAppData()
-    {
-        return $this->dbParent;
     }
 
     /**
@@ -512,56 +462,6 @@ class Database extends ScopedElement
         return null; // just to be explicit
     }
 
-    public function getGeneratorConfig()
-    {
-        if ($this->getAppData()) {
-            return $this->getAppData()->getGeneratorConfig();
-        } else {
-            return null;
-        }
-    }
-
-    public function getBuildProperty($key)
-    {
-        if ($config = $this->getGeneratorConfig()) {
-            return $config->getBuildProperty($key);
-        } else {
-            return '';
-        }
-    }
-
-    /**
-     * Adds a new Behavior to the database
-     *
-     * @return Behavior A behavior instance
-     */
-    public function addBehavior($bdata)
-    {
-        if ($bdata instanceof Behavior) {
-            $behavior = $bdata;
-            $behavior->setDatabase($this);
-            $this->behaviors[$behavior->getName()] = $behavior;
-
-            return $behavior;
-        } else {
-            $class = $this->getConfiguredBehavior($bdata['name']);
-            $behavior = new $class();
-            $behavior->loadFromXML($bdata);
-
-            return $this->addBehavior($behavior);
-        }
-    }
-
-    /**
-     * Get the database behaviors
-     *
-     * @return Array of Behavior objects
-     */
-    public function getBehaviors()
-    {
-        return $this->behaviors;
-    }
-
     /**
      * check if the database has a behavior by name
      *
@@ -596,31 +496,6 @@ class Database extends ScopedElement
         return $this->tablePrefix;
     }
 
-    /**
-     * Get the next behavior on all tables, ordered by behavior priority,
-     * and skipping the ones that were already executed,
-     *
-     * @return Behavior
-     */
-    public function getNextTableBehavior()
-    {
-        // order the behaviors according to Behavior::$tableModificationOrder
-        $behaviors = array();
-        foreach ($this->getTables() as $table) {
-            foreach ($table->getBehaviors() as $behavior) {
-                if (!$behavior->isTableModified()) {
-                    $behaviors[$behavior->getTableModificationOrder()][] = $behavior;
-                }
-            }
-        }
-        ksort($behaviors);
-        foreach ($behaviors as $behaviorList) {
-            foreach ($behaviorList as $behavior) {
-                return $behavior;
-            }
-        }
-    }
-
     public function doFinalInitialization()
     {
         // add the referrers for the foreign keys
@@ -631,7 +506,7 @@ class Database extends ScopedElement
             // add generic behaviors from build.properties
             $defaultBehaviors = explode(',', $defaultBehaviors);
             foreach ($defaultBehaviors as $behavior) {
-                $this->addBehavior(array('name' => trim($behavior)));
+                $this->addBehavior(['name' => trim($behavior)]);
             }
         }
 
@@ -662,6 +537,73 @@ class Database extends ScopedElement
         foreach ($this->getTables() as $table) {
             $table->doNaming();
             $table->setupReferrers();
+        }
+    }
+
+    /**
+     * Return the list of all tables
+     *
+     * @return Table[]
+     */
+    public function getTables()
+    {
+        return $this->tableList;
+    }
+
+    /**
+     * Adds a new Behavior to the database
+     *
+     * @return Behavior A behavior instance
+     */
+    public function addBehavior($bdata)
+    {
+        if ($bdata instanceof Behavior) {
+            $behavior = $bdata;
+            $behavior->setDatabase($this);
+            $this->behaviors[$behavior->getName()] = $behavior;
+
+            return $behavior;
+        } else {
+            $class    = $this->getConfiguredBehavior($bdata['name']);
+            $behavior = new $class();
+            $behavior->loadFromXML($bdata);
+
+            return $this->addBehavior($behavior);
+        }
+    }
+
+    /**
+     * Get the database behaviors
+     *
+     * @return Array of Behavior objects
+     */
+    public function getBehaviors()
+    {
+        return $this->behaviors;
+    }
+
+    /**
+     * Get the next behavior on all tables, ordered by behavior priority,
+     * and skipping the ones that were already executed,
+     *
+     * @return Behavior
+     */
+    public function getNextTableBehavior()
+    {
+        // order the behaviors according to Behavior::$tableModificationOrder
+        $behaviors = [];
+        foreach ($this->getTables() as $table) {
+            foreach ($table->getBehaviors() as $behavior) {
+                if (!$behavior->isTableModified()) {
+                    $behaviors[$behavior->getTableModificationOrder()][] = $behavior;
+                }
+            }
+        }
+        ksort($behaviors);
+        foreach ($behaviors as $behaviorList) {
+            foreach ($behaviorList as $behavior) {
+                return $behavior;
+            }
         }
     }
 
@@ -717,5 +659,52 @@ class Database extends ScopedElement
         foreach ($this->tableList as $table) {
             $table->appendXml($dbNode);
         }
+    }
+
+    /**
+     * Sets up the Database object based on the attributes that were passed to loadFromXML().
+     *
+     * @see        parent::loadFromXML()
+     */
+    protected function setupObject()
+    {
+        parent::setupObject();
+        $this->name                   = $this->getAttribute("name");
+        $this->baseClass              = $this->getAttribute("baseClass");
+        $this->basePeer               = $this->getAttribute("basePeer");
+        $this->defaultIdMethod        = $this->getAttribute("defaultIdMethod", IDMethod::NATIVE);
+        $this->defaultPhpNamingMethod = $this->getAttribute("defaultPhpNamingMethod", NameGenerator::CONV_METHOD_UNDERSCORE);
+        $this->defaultTranslateMethod = $this->getAttribute("defaultTranslateMethod", Validator::TRANSLATE_NONE);
+        $this->heavyIndexing          = $this->booleanValue($this->getAttribute("heavyIndexing"));
+        $this->tablePrefix            = $this->getAttribute('tablePrefix', $this->getBuildProperty('tablePrefix'));
+        $this->defaultStringFormat    = $this->getAttribute('defaultStringFormat', 'YAML');
+    }
+
+    public function getBuildProperty($key)
+    {
+        if ($config = $this->getGeneratorConfig()) {
+            return $config->getBuildProperty($key);
+        } else {
+            return '';
+        }
+    }
+
+    public function getGeneratorConfig()
+    {
+        if ($this->getAppData()) {
+            return $this->getAppData()->getGeneratorConfig();
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Get the parent of the table
+     *
+     * @return AppData
+     */
+    public function getAppData()
+    {
+        return $this->dbParent;
     }
 }

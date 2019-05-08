@@ -21,26 +21,33 @@ class XmlToDataSQL extends AbstractHandler
 {
 
     /**
+     * Flag for enabling debug output to aid in parser tracing.
+     */
+    const DEBUG = false;
+    /**
+     * Expat Parser.
+     *
+     * @var        ExpatParser
+     */
+    public $parser;
+    /**
      * The GeneratorConfig associated with the build.
      *
      * @var        GeneratorConfig
      */
     private $generatorConfig;
-
     /**
      * The database.
      *
      * @var        Database
      */
     private $database;
-
     /**
      * The output writer for the SQL file.
      *
      * @var        Writer
      */
     private $sqlWriter;
-
     /**
      * The database (and output SQL file) encoding.
      *
@@ -49,7 +56,6 @@ class XmlToDataSQL extends AbstractHandler
      * @var        string
      */
     private $encoding;
-
     /**
      * The classname of the static class that will perform the building.
      *
@@ -59,14 +65,12 @@ class XmlToDataSQL extends AbstractHandler
      * @var        string
      */
     private $builderClazz;
-
     /**
      * The name of the current table being processed.
      *
      * @var        string
      */
     private $currTableName;
-
     /**
      * The DataSQLBuilder for the current table.
      *
@@ -75,39 +79,27 @@ class XmlToDataSQL extends AbstractHandler
     private $currBuilder;
 
     /**
-     * Expat Parser.
-     *
-     * @var        ExpatParser
-     */
-    public $parser;
-
-    /**
-     * Flag for enabling debug output to aid in parser tracing.
-     */
-    const DEBUG = false;
-
-    /**
      * Construct new XmlToDataSQL class.
      *
      * This class is passed the Database object so that it knows what to expect from
      * the XML file.
      *
-     * @param Database        $database
+     * @param Database $database
      * @param GeneratorConfig $config
-     * @param string          $encoding Database encoding
+     * @param string $encoding Database encoding
      */
     public function __construct(Database $database, GeneratorConfig $config, $encoding = 'iso-8859-1')
     {
-        $this->database = $database;
+        $this->database        = $database;
         $this->generatorConfig = $config;
-        $this->encoding = $encoding;
+        $this->encoding        = $encoding;
     }
 
     /**
      * Transform the data dump input file into SQL and writes it to the output stream.
      *
      * @param PhingFile $xmlFile
-     * @param Writer    $out
+     * @param Writer $out
      *
      * @throws BuildException
      */
@@ -149,8 +141,8 @@ class XmlToDataSQL extends AbstractHandler
         try {
             if ($name == "dataset") {
                 // Clear any start/end DLL
-                call_user_func(array($this->builderClazz, 'reset'));
-                $this->sqlWriter->write(call_user_func(array($this->builderClazz, 'getDatabaseStartSql')));
+                call_user_func([$this->builderClazz, 'reset']);
+                $this->sqlWriter->write(call_user_func([$this->builderClazz, 'getDatabaseStartSql']));
             } else {
 
                 // we're processing a row of data
@@ -158,9 +150,9 @@ class XmlToDataSQL extends AbstractHandler
 
                 $table = $this->database->getTableByPhpName($name);
 
-                $columnValues = array();
+                $columnValues = [];
                 foreach ($attributes as $name => $value) {
-                    $col = $table->getColumnByPhpName($name);
+                    $col            = $table->getColumnByPhpName($name);
                     $columnValues[] = new ColumnValue($col, iconv('utf-8', $this->encoding, $value));
                 }
 
@@ -174,7 +166,7 @@ class XmlToDataSQL extends AbstractHandler
                     }
 
                     $this->currTableName = $table->getName();
-                    $this->currBuilder = $this->generatorConfig->getConfiguredBuilder($table, 'datasql');
+                    $this->currBuilder   = $this->generatorConfig->getConfiguredBuilder($table, 'datasql');
 
                     $this->sqlWriter->write($this->currBuilder->getTableStartSql());
                 }
@@ -206,7 +198,7 @@ class XmlToDataSQL extends AbstractHandler
             if ($this->currBuilder !== null) {
                 $this->sqlWriter->write($this->currBuilder->getTableEndSql());
             }
-            $this->sqlWriter->write(call_user_func(array($this->builderClazz, 'getDatabaseEndSql')));
+            $this->sqlWriter->write(call_user_func([$this->builderClazz, 'getDatabaseEndSql']));
         }
     }
 } // XmlToData
@@ -223,7 +215,7 @@ class DataRow
 
     public function __construct(Table $table, $columnValues)
     {
-        $this->table = $table;
+        $this->table        = $table;
         $this->columnValues = $columnValues;
     }
 

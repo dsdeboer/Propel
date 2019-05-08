@@ -36,7 +36,7 @@ class Index extends XMLElement
     private $indexColumns;
 
     /** @var int[] */
-    private $indexColumnSizes = array();
+    private $indexColumnSizes = [];
 
     /**
      * Creates a new Index instance.
@@ -46,37 +46,6 @@ class Index extends XMLElement
     public function __construct($name = null)
     {
         $this->indexName = $name;
-    }
-
-    private function createName()
-    {
-        $table = $this->getTable();
-        $inputs = array();
-        $inputs[] = $table->getDatabase();
-        $inputs[] = $table->getCommonName();
-        if ($this->isUnique()) {
-            $inputs[] = "U";
-        } else {
-            $inputs[] = "I";
-        }
-        // ASSUMPTION: This Index not yet added to the list.
-        if ($this->isUnique()) {
-            $inputs[] = count($table->getUnices()) + 1;
-        } else {
-            $inputs[] = count($table->getIndices()) + 1;
-        }
-
-        $this->indexName = NameFactory::generateName(NameFactory::CONSTRAINT_GENERATOR, $inputs);
-    }
-
-    /**
-     * Sets up the Index object based on the attributes that were passed to loadFromXML().
-     *
-     * @see        parent::loadFromXML()
-     */
-    protected function setupObject()
-    {
-        $this->indexName = $this->getAttribute("name");
     }
 
     /**
@@ -89,20 +58,21 @@ class Index extends XMLElement
     }
 
     /**
-     * Returns the uniqueness of this index.
-     */
-    public function isUnique()
-    {
-        return false;
-    }
-
-    /**
      * @see        #getName()
      * @deprecated Use getName() instead.
      */
     public function getIndexName()
     {
         return $this->getName();
+    }
+
+    /**
+     * @see        #setName(String name)
+     * @deprecated Use setName(String name) instead.
+     */
+    public function setIndexName($name)
+    {
+        $this->setName($name);
     }
 
     /**
@@ -125,13 +95,25 @@ class Index extends XMLElement
         }
     }
 
-    /**
-     * @see        #setName(String name)
-     * @deprecated Use setName(String name) instead.
-     */
-    public function setIndexName($name)
+    private function createName()
     {
-        $this->setName($name);
+        $table    = $this->getTable();
+        $inputs   = [];
+        $inputs[] = $table->getDatabase();
+        $inputs[] = $table->getCommonName();
+        if ($this->isUnique()) {
+            $inputs[] = "U";
+        } else {
+            $inputs[] = "I";
+        }
+        // ASSUMPTION: This Index not yet added to the list.
+        if ($this->isUnique()) {
+            $inputs[] = count($table->getUnices()) + 1;
+        } else {
+            $inputs[] = count($table->getIndices()) + 1;
+        }
+
+        $this->indexName = NameFactory::generateName(NameFactory::CONSTRAINT_GENERATOR, $inputs);
     }
 
     /**
@@ -143,19 +125,27 @@ class Index extends XMLElement
     }
 
     /**
-     * Set the parent Table of the index
-     */
-    public function setTable(Table $parent)
-    {
-        $this->parentTable = $parent;
-    }
-
-    /**
      * Get the parent Table of the index
      */
     public function getTable()
     {
         return $this->parentTable;
+    }
+
+    /**
+     * Returns the uniqueness of this index.
+     */
+    public function isUnique()
+    {
+        return false;
+    }
+
+    /**
+     * Set the parent Table of the index
+     */
+    public function setTable(Table $parent)
+    {
+        $this->parentTable = $parent;
     }
 
     /**
@@ -167,6 +157,20 @@ class Index extends XMLElement
     }
 
     /**
+     * Sets array of columns to use for index.
+     *
+     * @param array $indexColumns Column[]
+     */
+    public function setColumns(array $indexColumns)
+    {
+        $this->indexColumns     = [];
+        $this->indexColumnSizes = [];
+        foreach ($indexColumns as $col) {
+            $this->addColumn($col);
+        }
+    }
+
+    /**
      * Adds a new column to an index.
      *
      * @param mixed $data Column or attributes from XML.
@@ -174,32 +178,18 @@ class Index extends XMLElement
     public function addColumn($data)
     {
         if ($data instanceof Column) {
-            $column = $data;
+            $column               = $data;
             $this->indexColumns[] = $column->getName();
             if ($column->getSize()) {
                 $this->indexColumnSizes[$column->getName()] = $column->getSize();
             }
         } else {
-            $attrib = $data;
-            $name = $attrib["name"];
+            $attrib               = $data;
+            $name                 = $attrib["name"];
             $this->indexColumns[] = $name;
             if (isset($attrib["size"])) {
                 $this->indexColumnSizes[$name] = $attrib["size"];
             }
-        }
-    }
-
-    /**
-     * Sets array of columns to use for index.
-     *
-     * @param array $indexColumns Column[]
-     */
-    public function setColumns(array $indexColumns)
-    {
-        $this->indexColumns = array();
-        $this->indexColumnSizes = array();
-        foreach ($indexColumns as $col) {
-            $this->addColumn($col);
         }
     }
 
@@ -236,7 +226,7 @@ class Index extends XMLElement
      */
     public function resetColumnSize()
     {
-        $this->indexColumnSizes = array();
+        $this->indexColumnSizes = [];
     }
 
     /**
@@ -259,6 +249,16 @@ class Index extends XMLElement
     }
 
     /**
+     * Return the list of local columns. You should not edit this list.
+     *
+     * @return array string[]
+     */
+    public function getColumns()
+    {
+        return $this->indexColumns;
+    }
+
+    /**
      * @see        #getColumns()
      * @deprecated Use getColumns() instead.
      */
@@ -270,9 +270,9 @@ class Index extends XMLElement
     /**
      * Check whether this index has a given column at a given position
      *
-     * @param integer $pos             Position in the column list
-     * @param string  $name            Column name
-     * @param integer $size            optional size check
+     * @param integer $pos Position in the column list
+     * @param string $name Column name
+     * @param integer $size optional size check
      * @param boolean $caseInsensitive Whether the comparison is case insensitive.
      *                                 False by default.
      *
@@ -307,16 +307,6 @@ class Index extends XMLElement
     }
 
     /**
-     * Return the list of local columns. You should not edit this list.
-     *
-     * @return array string[]
-     */
-    public function getColumns()
-    {
-        return $this->indexColumns;
-    }
-
-    /**
      * @see        XMLElement::appendXml(DOMNode)
      */
     public function appendXml(DOMNode $node)
@@ -334,5 +324,15 @@ class Index extends XMLElement
         foreach ($this->vendorInfos as $vi) {
             $vi->appendXml($idxNode);
         }
+    }
+
+    /**
+     * Sets up the Index object based on the attributes that were passed to loadFromXML().
+     *
+     * @see        parent::loadFromXML()
+     */
+    protected function setupObject()
+    {
+        $this->indexName = $this->getAttribute("name");
     }
 }

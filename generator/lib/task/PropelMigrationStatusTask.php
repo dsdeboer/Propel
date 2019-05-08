@@ -56,8 +56,8 @@ class PropelMigrationStatusTask extends BasePropelMigrationTask
         }
 
         $this->log('Listing Migration files...');
-        $dir = $this->getOutputDirectory();
-        $migrationTimestamps = $manager->getMigrationTimestamps();
+        $dir                  = $this->getOutputDirectory();
+        $migrationTimestamps  = $manager->getMigrationTimestamps();
         $nbExistingMigrations = count($migrationTimestamps);
         if ($migrationTimestamps) {
             $this->log(sprintf(
@@ -87,7 +87,7 @@ class PropelMigrationStatusTask extends BasePropelMigrationTask
 
             return false;
         }
-        $migrationTimestamps = $manager->getValidMigrationTimestamps();
+        $migrationTimestamps        = $manager->getValidMigrationTimestamps();
         $nbNotYetExecutedMigrations = count($migrationTimestamps);
         if (!$nbNotYetExecutedMigrations) {
             $this->log('All migration files were already executed - Nothing to migrate.');

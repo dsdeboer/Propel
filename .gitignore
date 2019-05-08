@@ -6,7 +6,7 @@ test/fixtures/schemas/build/
 test/fixtures/treetest/build/
 vendor/
 composer.lock
-composer.phar
 generator/pear/build/
 runtime/pear/build/
 .idea/
+*.phar

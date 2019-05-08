@@ -21,25 +21,6 @@ class SqlitePlatform extends DefaultPlatform
 {
 
     /**
-     * Initializes db specific domain mapping.
-     */
-    protected function initialize()
-    {
-        parent::initialize();
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::NUMERIC, "DECIMAL"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::LONGVARCHAR, "MEDIUMTEXT"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::DATE, "DATETIME"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::BINARY, "BLOB"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::VARBINARY, "MEDIUMBLOB"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::LONGVARBINARY, "LONGBLOB"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::BLOB, "LONGBLOB"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::CLOB, "LONGTEXT"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::OBJECT, "MEDIUMTEXT"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::PHP_ARRAY, "MEDIUMTEXT"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::ENUM, "TINYINT"));
-    }
-
-    /**
      * @link       http://www.sqlite.org/autoinc.html
      */
     public function getAutoIncrement()
@@ -56,7 +37,7 @@ class SqlitePlatform extends DefaultPlatform
     {
         $tableDescription = $table->hasDescription() ? $this->getCommentLineDDL($table->getDescription()) : '';
 
-        $lines = array();
+        $lines = [];
 
         foreach ($table->getColumns() as $column) {
             $lines[] = $this->getColumnDDL($column);
@@ -90,6 +71,11 @@ class SqlitePlatform extends DefaultPlatform
         );
     }
 
+    public function quoteIdentifier($text)
+    {
+        return $this->isIdentifierQuotingEnabled ? '[' . $text . ']' : $text;
+    }
+
     public function getDropPrimaryKeyDDL(Table $table)
     {
         // FIXME: not supported by SQLite
@@ -108,18 +94,6 @@ class SqlitePlatform extends DefaultPlatform
         return $this->getForeignKeyDDL($fk);
     }
 
-    public function getDropForeignKeyDDL(ForeignKey $fk)
-    {
-        return '';
-    }
-
-    public function getDropTableDDL(Table $table)
-    {
-        return "
-DROP TABLE IF EXISTS " . $this->quoteIdentifier($table->getName()) . ";
-";
-    }
-
     public function getForeignKeyDDL(ForeignKey $fk)
     {
         $pattern = "
@@ -132,6 +106,18 @@ DROP TABLE IF EXISTS " . $this->quoteIdentifier($table->getName()) . ";
             $fk->getForeignTableName(),
             $this->getColumnListDDL($fk->getForeignColumns())
         );
+    }
+
+    public function getDropForeignKeyDDL(ForeignKey $fk)
+    {
+        return '';
+    }
+
+    public function getDropTableDDL(Table $table)
+    {
+        return "
+DROP TABLE IF EXISTS " . $this->quoteIdentifier($table->getName()) . ";
+";
     }
 
     public function hasSize($sqlType)
@@ -155,16 +141,30 @@ DROP TABLE IF EXISTS " . $this->quoteIdentifier($table->getName()) . ";
         }
     }
 
-    public function quoteIdentifier($text)
-    {
-        return $this->isIdentifierQuotingEnabled ? '[' . $text . ']' : $text;
-    }
-
     /**
      * @see        Platform::supportsMigrations()
      */
     public function supportsMigrations()
     {
         return false;
+    }
+
+    /**
+     * Initializes db specific domain mapping.
+     */
+    protected function initialize()
+    {
+        parent::initialize();
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::NUMERIC, "DECIMAL"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::LONGVARCHAR, "MEDIUMTEXT"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::DATE, "DATETIME"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::BINARY, "BLOB"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::VARBINARY, "MEDIUMBLOB"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::LONGVARBINARY, "LONGBLOB"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::BLOB, "LONGBLOB"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::CLOB, "LONGTEXT"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::OBJECT, "MEDIUMTEXT"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::PHP_ARRAY, "MEDIUMTEXT"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::ENUM, "TINYINT"));
     }
 }

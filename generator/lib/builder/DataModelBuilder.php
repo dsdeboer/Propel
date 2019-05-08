@@ -26,151 +26,131 @@ abstract class DataModelBuilder
 {
 
     /**
-     * The current table.
-     *
-     * @var        Table
-     */
-    private $table;
-
-    /**
-     * The generator config object holding build properties, etc.
-     *
-     * @var        GeneratorConfigInterface
-     */
-    private $generatorConfig;
-
-    /**
-     * An array of warning messages that can be retrieved for display (e.g. as part of phing build process).
-     *
-     * @var        array string[]
-     */
-    private $warnings = array();
-
-    /**
-     * Peer builder class for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $peerBuilder;
-
-    /**
-     * Stub Peer builder class for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $stubPeerBuilder;
-
-    /**
-     * Object builder class for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $objectBuilder;
-
-    /**
-     * Stub Object builder class for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $stubObjectBuilder;
-
-    /**
-     * Query builder class for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $queryBuilder;
-
-    /**
-     * Stub Query builder class for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $stubQueryBuilder;
-
-    /**
      * TableMap builder class for current table.
      *
      * @var        DataModelBuilder
      */
     protected $tablemapBuilder;
-
-    /**
-     * Stub Interface builder class for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $interfaceBuilder;
-
-    /**
-     * Stub child object for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $multiExtendObjectBuilder;
-
-    /**
-     * Node object builder for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $nodeBuilder;
-
-    /**
-     * Node peer builder for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $nodePeerBuilder;
-
-    /**
-     * Stub node object builder for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $stubNodeBuilder;
-
-    /**
-     * Stub node peer builder for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $stubNodePeerBuilder;
-
-    /**
-     * NestedSet object builder for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $nestedSetBuilder;
-
-    /**
-     * NestedSet peer builder for current table.
-     *
-     * @var        DataModelBuilder
-     */
-    private $nestedSetPeerBuilder;
-
-    /**
-     * The Data-SQL builder for current table.
-     *
-     * @var        DataSQLBuilder
-     */
-    private $dataSqlBuilder;
-
-    /**
-     * The Pluralizer class to use.
-     *
-     * @var        Pluralizer
-     */
-    private $pluralizer;
-
     /**
      * The platform class
      *
      * @var            PropelPlatformInterface
      */
     protected $platform;
+    /**
+     * The current table.
+     *
+     * @var        Table
+     */
+    private $table;
+    /**
+     * The generator config object holding build properties, etc.
+     *
+     * @var        GeneratorConfigInterface
+     */
+    private $generatorConfig;
+    /**
+     * An array of warning messages that can be retrieved for display (e.g. as part of phing build process).
+     *
+     * @var        array string[]
+     */
+    private $warnings = [];
+    /**
+     * Peer builder class for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $peerBuilder;
+    /**
+     * Stub Peer builder class for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $stubPeerBuilder;
+    /**
+     * Object builder class for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $objectBuilder;
+    /**
+     * Stub Object builder class for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $stubObjectBuilder;
+    /**
+     * Query builder class for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $queryBuilder;
+    /**
+     * Stub Query builder class for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $stubQueryBuilder;
+    /**
+     * Stub Interface builder class for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $interfaceBuilder;
+    /**
+     * Stub child object for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $multiExtendObjectBuilder;
+    /**
+     * Node object builder for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $nodeBuilder;
+    /**
+     * Node peer builder for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $nodePeerBuilder;
+    /**
+     * Stub node object builder for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $stubNodeBuilder;
+    /**
+     * Stub node peer builder for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $stubNodePeerBuilder;
+    /**
+     * NestedSet object builder for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $nestedSetBuilder;
+    /**
+     * NestedSet peer builder for current table.
+     *
+     * @var        DataModelBuilder
+     */
+    private $nestedSetPeerBuilder;
+    /**
+     * The Data-SQL builder for current table.
+     *
+     * @var        DataSQLBuilder
+     */
+    private $dataSqlBuilder;
+    /**
+     * The Pluralizer class to use.
+     *
+     * @var        Pluralizer
+     */
+    private $pluralizer;
 
     /**
      * Creates new instance of DataModelBuilder subclass.
@@ -194,6 +174,46 @@ abstract class DataModelBuilder
         }
 
         return $this->peerBuilder;
+    }
+
+    /**
+     * Gets the GeneratorConfig object.
+     *
+     * @return GeneratorConfig
+     */
+    public function getGeneratorConfig()
+    {
+        return $this->generatorConfig;
+    }
+
+    /**
+     * Sets the GeneratorConfig object.
+     *
+     * @param GeneratorConfig $v
+     */
+    public function setGeneratorConfig(GeneratorConfigInterface $v)
+    {
+        $this->generatorConfig = $v;
+    }
+
+    /**
+     * Returns the current Table object.
+     *
+     * @return Table
+     */
+    public function getTable()
+    {
+        return $this->table;
+    }
+
+    /**
+     * Sets the table for this builder.
+     *
+     * @param Table $table
+     */
+    public function setTable(Table $table)
+    {
+        $this->table = $table;
     }
 
     /**
@@ -423,7 +443,7 @@ abstract class DataModelBuilder
     /**
      * Gets a new data model builder class for specified table and classname.
      *
-     * @param Table  $table
+     * @param Table $table
      * @param string $classname The class of builder
      *
      * @return DataModelBuilder
@@ -553,89 +573,6 @@ abstract class DataModelBuilder
     }
 
     /**
-     * Gets the GeneratorConfig object.
-     *
-     * @return GeneratorConfig
-     */
-    public function getGeneratorConfig()
-    {
-        return $this->generatorConfig;
-    }
-
-    /**
-     * Get a specific [name transformed] build property.
-     *
-     * @param string $name
-     *
-     * @return string
-     */
-    public function getBuildProperty($name)
-    {
-        if ($this->getGeneratorConfig()) {
-            return $this->getGeneratorConfig()->getBuildProperty($name);
-        }
-
-        return null; // just to be explicit
-    }
-
-    /**
-     * Sets the GeneratorConfig object.
-     *
-     * @param GeneratorConfig $v
-     */
-    public function setGeneratorConfig(GeneratorConfigInterface $v)
-    {
-        $this->generatorConfig = $v;
-    }
-
-    /**
-     * Sets the table for this builder.
-     *
-     * @param Table $table
-     */
-    public function setTable(Table $table)
-    {
-        $this->table = $table;
-    }
-
-    /**
-     * Returns the current Table object.
-     *
-     * @return Table
-     */
-    public function getTable()
-    {
-        return $this->table;
-    }
-
-    /**
-     * Convenience method to returns the Platform class for this table (database).
-     *
-     * @return PropelPlatformInterface
-     */
-    public function getPlatform()
-    {
-        if (null === $this->platform) {
-            // try to load the platform from the table
-            if ($this->getTable() && $this->getTable()->getDatabase()) {
-                $this->setPlatform($this->getTable()->getDatabase()->getPlatform());
-            }
-        }
-
-        return $this->platform;
-    }
-
-    /**
-     * Platform setter
-     *
-     * @param PropelPlatformInterface $platform
-     */
-    public function setPlatform(PropelPlatformInterface $platform)
-    {
-        $this->platform = $platform;
-    }
-
-    /**
      * Convenience method to returns the database for current table.
      *
      * @return Database
@@ -645,16 +582,6 @@ abstract class DataModelBuilder
         if ($this->getTable()) {
             return $this->getTable()->getDatabase();
         }
-    }
-
-    /**
-     * Pushes a message onto the stack of warnings.
-     *
-     * @param string $msg The warning message.
-     */
-    protected function warn($msg)
-    {
-        $this->warnings[] = $msg;
     }
 
     /**
@@ -688,6 +615,49 @@ abstract class DataModelBuilder
     }
 
     /**
+     * Get a specific [name transformed] build property.
+     *
+     * @param string $name
+     *
+     * @return string
+     */
+    public function getBuildProperty($name)
+    {
+        if ($this->getGeneratorConfig()) {
+            return $this->getGeneratorConfig()->getBuildProperty($name);
+        }
+
+        return null; // just to be explicit
+    }
+
+    /**
+     * Convenience method to returns the Platform class for this table (database).
+     *
+     * @return PropelPlatformInterface
+     */
+    public function getPlatform()
+    {
+        if (null === $this->platform) {
+            // try to load the platform from the table
+            if ($this->getTable() && $this->getTable()->getDatabase()) {
+                $this->setPlatform($this->getTable()->getDatabase()->getPlatform());
+            }
+        }
+
+        return $this->platform;
+    }
+
+    /**
+     * Platform setter
+     *
+     * @param PropelPlatformInterface $platform
+     */
+    public function setPlatform(PropelPlatformInterface $platform)
+    {
+        $this->platform = $platform;
+    }
+
+    /**
      * Returns the name of the current class being built, with a possible prefix.
      *
      * @return string
@@ -696,5 +666,15 @@ abstract class DataModelBuilder
     public function prefixClassname($identifier)
     {
         return $this->getBuildProperty('classPrefix') . $identifier;
+    }
+
+    /**
+     * Pushes a message onto the stack of warnings.
+     *
+     * @param string $msg The warning message.
+     */
+    protected function warn($msg)
+    {
+        $this->warnings[] = $msg;
     }
 }

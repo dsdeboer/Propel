@@ -47,25 +47,6 @@ abstract class ScopedElement extends XMLElement
     protected $schema;
 
     /**
-     * retrieves a build property.
-     *
-     * @param mixed $name
-     */
-    abstract protected function getBuildProperty($name);
-
-    /**
-     * Sets up the Rule object based on the attributes that were passed to loadFromXML().
-     *
-     * @see       parent::loadFromXML()
-     */
-    protected function setupObject()
-    {
-        $this->setPackage($this->getAttribute("package", $this->pkg));
-        $this->setSchema($this->getAttribute("schema", $this->schema));
-        $this->setNamespace($this->getAttribute("namespace", $this->namespace));
-    }
-
-    /**
      * Get the value of the namespace.
      *
      * @return value of namespace.
@@ -87,7 +68,7 @@ abstract class ScopedElement extends XMLElement
         }
         $this->namespace = $v;
         if ($v && (!$this->pkg || $this->pkgOverridden) && $this->getBuildProperty('namespaceAutoPackage')) {
-            $this->pkg = str_replace('\\', '.', $v);
+            $this->pkg           = str_replace('\\', '.', $v);
             $this->pkgOverridden = true;
         }
     }
@@ -100,20 +81,6 @@ abstract class ScopedElement extends XMLElement
     public function getPackage()
     {
         return $this->pkg;
-    }
-
-    /**
-     * Set the value of package.
-     *
-     * @param   $v Value to assign to package.
-     */
-    public function setPackage($v)
-    {
-        if ($v == $this->pkg) {
-            return;
-        }
-        $this->pkg = $v;
-        $this->pkgOverridden = false;
     }
 
     /**
@@ -138,11 +105,44 @@ abstract class ScopedElement extends XMLElement
         }
         $this->schema = $v;
         if ($v && !$this->pkg && $this->getBuildProperty('schemaAutoPackage')) {
-            $this->pkg = $v;
+            $this->pkg           = $v;
             $this->pkgOverridden = true;
         }
         if ($v && !$this->namespace && $this->getBuildProperty('schemaAutoNamespace')) {
             $this->namespace = $v;
         }
+    }
+
+    /**
+     * retrieves a build property.
+     *
+     * @param mixed $name
+     */
+    abstract protected function getBuildProperty($name);
+
+    /**
+     * Sets up the Rule object based on the attributes that were passed to loadFromXML().
+     *
+     * @see       parent::loadFromXML()
+     */
+    protected function setupObject()
+    {
+        $this->setPackage($this->getAttribute("package", $this->pkg));
+        $this->setSchema($this->getAttribute("schema", $this->schema));
+        $this->setNamespace($this->getAttribute("namespace", $this->namespace));
+    }
+
+    /**
+     * Set the value of package.
+     *
+     * @param   $v Value to assign to package.
+     */
+    public function setPackage($v)
+    {
+        if ($v == $this->pkg) {
+            return;
+        }
+        $this->pkg           = $v;
+        $this->pkgOverridden = false;
     }
 }

@@ -43,22 +43,7 @@ class NameFactory
      * The cache of <code>NameGenerator</code> algorithms in use for
      * name generation, keyed by fully qualified class name.
      */
-    private static $algorithms = array();
-
-    /**
-     * Factory method which retrieves an instance of the named generator.
-     *
-     * @param string $name The fully qualified class name of the name
-     * generation algorithm to retrieve.
-     */
-    protected static function getAlgorithm($name)
-    {
-        if (!isset(self::$algorithms[$name])) {
-            self::$algorithms[$name] = new $name();
-        }
-
-        return self::$algorithms[$name];
-    }
+    private static $algorithms = [];
 
     /**
      * Given a list of <code>String</code> objects, implements an
@@ -76,5 +61,20 @@ class NameFactory
         $algorithm = self::getAlgorithm($algorithmName);
 
         return $algorithm->generateName($inputs);
+    }
+
+    /**
+     * Factory method which retrieves an instance of the named generator.
+     *
+     * @param string $name The fully qualified class name of the name
+     * generation algorithm to retrieve.
+     */
+    protected static function getAlgorithm($name)
+    {
+        if (!isset(self::$algorithms[$name])) {
+            self::$algorithms[$name] = new $name();
+        }
+
+        return self::$algorithms[$name];
     }
 }

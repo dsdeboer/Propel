@@ -27,60 +27,41 @@
 class PropelSQLExec extends AbstractPropelTask
 {
 
-    private $goodSql = 0;
-    private $totalSql = 0;
-
-    //private static $errorActions = array("continue", "stop", "abort");
-
-    /** PDO Database connection */
-    private $conn = null;
-
-    /** Autocommit flag. Default value is false */
-    private $autocommit = false;
-
-    /** DB url. */
-    private $url = null;
-
-    /** User name. */
-    private $userId = null;
-
-    /** Password */
-    private $password = null;
-
-    /** Action to perform if an error is found */
-    private $onError = "abort";
-
-    /** Src directory for the files listed in the sqldbmap. */
-    private $srcDir;
-
-    /** Properties file that maps an individual SQL file to a database. */
-    private $sqldbmap;
-
     /**
      * The buildtime connection settings
      *
      * @var        Array
      */
-    protected $buildConnections = array();
+    protected $buildConnections = [];
+    private $goodSql  = 0;
+
+    //private static $errorActions = array("continue", "stop", "abort");
+    private $totalSql = 0;
+    /** PDO Database connection */
+    private $conn = null;
+    /** Autocommit flag. Default value is false */
+    private $autocommit = false;
+    /** DB url. */
+    private $url = null;
+    /** User name. */
+    private $userId = null;
+    /** Password */
+    private $password = null;
+    /** Action to perform if an error is found */
+    private $onError = "abort";
+    /** Src directory for the files listed in the sqldbmap. */
+    private $srcDir;
+    /** Properties file that maps an individual SQL file to a database. */
+    private $sqldbmap;
 
     /**
-     * Set the sqldbmap properties file.
+     * Get the buildtime connection settings.
      *
-     * @param   $sqldbmap filename for the sqldbmap
+     * @return array $buildConnections
      */
-    public function setSqlDbMap($sqldbmap)
+    public function getBuildConnections()
     {
-        $this->sqldbmap = $this->project->resolveFile($sqldbmap);
-    }
-
-    /**
-     * Get the sqldbmap properties file.
-     *
-     * @return filename for the sqldbmap
-     */
-    public function getSqlDbMap()
-    {
-        return $this->sqldbmap;
+        return $this->buildConnections;
     }
 
     /**
@@ -94,34 +75,13 @@ class PropelSQLExec extends AbstractPropelTask
     }
 
     /**
-     * Get the buildtime connection settings.
+     * Get the src directory for the sql files listed in the sqldbmap file.
      *
-     * @return array $buildConnections
+     * @return PhingFile SQL Source directory
      */
-    public function getBuildConnections()
+    public function getSrcDir()
     {
-        return $this->buildConnections;
-    }
-
-    /**
-     * Get the buildtime connection settings for a given database name.
-     *
-     * @param string $database
-     *
-     * @return array $buildConnections
-     */
-    public function getBuildConnection($database)
-    {
-        if (!isset($this->buildConnections[$database])) {
-            // fallback to default connection settings from build.properties
-            return array(
-                'dsn'      => $this->url,
-                'user'     => $this->userId,
-                'password' => $this->password,
-            );
-        }
-
-        return $this->buildConnections[$database];
+        return $this->srcDir;
     }
 
     /**
@@ -132,16 +92,6 @@ class PropelSQLExec extends AbstractPropelTask
     public function setSrcDir(PhingFile $srcDir)
     {
         $this->srcDir = $srcDir;
-    }
-
-    /**
-     * Get the src directory for the sql files listed in the sqldbmap file.
-     *
-     * @return PhingFile SQL Source directory
-     */
-    public function getSrcDir()
-    {
-        return $this->srcDir;
     }
 
     /**
@@ -185,7 +135,7 @@ class PropelSQLExec extends AbstractPropelTask
      */
     public function setAutoCommit($autocommit)
     {
-        $this->autocommit = (boolean) $autocommit;
+        $this->autocommit = (boolean)$autocommit;
     }
 
     /**
@@ -222,7 +172,7 @@ class PropelSQLExec extends AbstractPropelTask
 
         $this->log(sprintf('Reading SQL files...'));
         foreach ($databases as $database => $files) {
-            $statements[$database] = array();
+            $statements[$database] = [];
             foreach ($files as $fileName) {
                 $fullFileName = $this->srcDir ? $this->srcDir . DIRECTORY_SEPARATOR . $fileName : $fileName;
                 if (file_exists($fullFileName)) {
@@ -245,6 +195,26 @@ class PropelSQLExec extends AbstractPropelTask
         $this->log(sprintf('SQL execution complete. %d statements successfully executed.', $successfulStatements));
     }
 
+    /**
+     * Get the sqldbmap properties file.
+     *
+     * @return filename for the sqldbmap
+     */
+    public function getSqlDbMap()
+    {
+        return $this->sqldbmap;
+    }
+
+    /**
+     * Set the sqldbmap properties file.
+     *
+     * @param   $sqldbmap filename for the sqldbmap
+     */
+    public function setSqlDbMap($sqldbmap)
+    {
+        $this->sqldbmap = $this->project->resolveFile($sqldbmap);
+    }
+
     protected function getFilesToExecute()
     {
         $map = new Properties();
@@ -253,11 +223,11 @@ class PropelSQLExec extends AbstractPropelTask
         } catch (IOException $ioe) {
             throw new BuildException("Cannot open and process the sqldbmap!");
         }
-        $databases = array();
+        $databases = [];
         foreach ($map->getProperties() as $sqlfile => $database) {
 
             if (!isset($databases[$database])) {
-                $databases[$database] = array();
+                $databases[$database] = [];
             }
 
             // We want to make sure that the base schemas
@@ -277,8 +247,8 @@ class PropelSQLExec extends AbstractPropelTask
     /**
      * Executes a set of SQL statements into the target database.
      *
-     * @param string $database   The name of the database, as defined in the build connections
-     * @param array  $statements list of SQL statements (strings) to be executed
+     * @param string $database The name of the database, as defined in the build connections
+     * @param array $statements list of SQL statements (strings) to be executed
      *
      * @return integer the number of successful statements
      *
@@ -287,7 +257,7 @@ class PropelSQLExec extends AbstractPropelTask
     protected function insertDatabaseSqlFiles($database, $statements)
     {
         $buildConnection = $this->getBuildConnection($database);
-        $dsn = str_replace("@DB@", $database, $buildConnection['dsn']);
+        $dsn             = str_replace("@DB@", $database, $buildConnection['dsn']);
         $this->log(sprintf('  Connecting to database "%s" using DSN "%s"', $database, $dsn));
 
         try {
@@ -332,6 +302,27 @@ class PropelSQLExec extends AbstractPropelTask
         $this->log(sprintf('  %d of %d SQL statements executed successfully', $this->goodSql, $this->totalSql));
 
         return $this->goodSql;
+    }
+
+    /**
+     * Get the buildtime connection settings for a given database name.
+     *
+     * @param string $database
+     *
+     * @return array $buildConnections
+     */
+    public function getBuildConnection($database)
+    {
+        if (!isset($this->buildConnections[$database])) {
+            // fallback to default connection settings from build.properties
+            return [
+                'dsn'      => $this->url,
+                'user'     => $this->userId,
+                'password' => $this->password,
+            ];
+        }
+
+        return $this->buildConnections[$database];
     }
 
     /**

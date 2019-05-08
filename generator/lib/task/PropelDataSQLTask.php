@@ -48,47 +48,13 @@ class PropelDataSQLTask extends AbstractPropelDataModelTask
     private $srcDir;
 
     /**
-     * Set the file that maps between SQL files and databases.
+     * Get the src directory for the data xml files listed in the datadbmap file.
      *
-     * @param PhingFile $sqldbmap the sql -> db map.
-     *
-     * @return void
+     * @return PhingFile data xml source directory
      */
-    public function setSqlDbMap(PhingFile $sqldbmap)
+    public function getSrcDir()
     {
-        $this->sqldbmap = $sqldbmap;
-    }
-
-    /**
-     * Get the file that maps between SQL files and databases.
-     *
-     * @return PhingFile sqldbmap.
-     */
-    public function getSqlDbMap()
-    {
-        return $this->sqldbmap;
-    }
-
-    /**
-     * Set the file that maps between data XML files and databases.
-     *
-     * @param PhingFile $datadbmap the db map
-     *
-     * @return void
-     */
-    public function setDataDbMap(PhingFile $datadbmap)
-    {
-        $this->datadbmap = $datadbmap;
-    }
-
-    /**
-     * Get the file that maps between data XML files and databases.
-     *
-     * @return PhingFile $datadbmap.
-     */
-    public function getDataDbMap()
-    {
-        return $this->datadbmap;
+        return $this->srcDir;
     }
 
     /**
@@ -101,33 +67,7 @@ class PropelDataSQLTask extends AbstractPropelDataModelTask
         $this->srcDir = $srcDir;
     }
 
-    /**
-     * Get the src directory for the data xml files listed in the datadbmap file.
-     *
-     * @return PhingFile data xml source directory
-     */
-    public function getSrcDir()
-    {
-        return $this->srcDir;
-    }
-
-    /**
-     * Search through all data models looking for matching database.
-     *
-     * @return Database or NULL if none found.
-     */
-    private function getDatabase($name)
-    {
-        foreach ($this->getDataModels() as $dm) {
-            foreach ($dm->getDatabases() as $db) {
-                if ($db->getName() == $name) {
-                    return $db;
-                }
-            }
-        }
-    }
-
-    /**
+/**
      * Main method parses the XML files and creates SQL files.
      *
      * @return void
@@ -168,7 +108,7 @@ class PropelDataSQLTask extends AbstractPropelDataModelTask
 
                 $db->setPlatform($platform);
 
-                $outFile = $this->getMappedFile($dataXMLFilename);
+                $outFile   = $this->getMappedFile($dataXMLFilename);
                 $sqlWriter = new FileWriter($outFile);
 
                 $this->log("Creating SQL from XML data dump file: " . $dataXMLFile->getAbsolutePath());
@@ -193,6 +133,66 @@ class PropelDataSQLTask extends AbstractPropelDataModelTask
             }
         } // foreach data xml file
 
+    }
+
+    /**
+     * Get the file that maps between data XML files and databases.
+     *
+     * @return PhingFile $datadbmap.
+     */
+    public function getDataDbMap()
+    {
+        return $this->datadbmap;
+    }
+
+    /**
+     * Set the file that maps between data XML files and databases.
+     *
+     * @param PhingFile $datadbmap the db map
+     *
+     * @return void
+     */
+    public function setDataDbMap(PhingFile $datadbmap)
+    {
+        $this->datadbmap = $datadbmap;
+    }
+
+    /**
+     * Search through all data models looking for matching database.
+     *
+     * @return Database or NULL if none found.
+     */
+    private function getDatabase($name)
+    {
+        foreach ($this->getDataModels() as $dm) {
+            foreach ($dm->getDatabases() as $db) {
+                if ($db->getName() == $name) {
+                    return $db;
+                }
+            }
+        }
+    }
+
+    /**
+     * Get the file that maps between SQL files and databases.
+     *
+     * @return PhingFile sqldbmap.
+     */
+    public function getSqlDbMap()
+    {
+        return $this->sqldbmap;
+    }
+
+        /**
+     * Set the file that maps between SQL files and databases.
+     *
+     * @param PhingFile $sqldbmap the sql -> db map.
+     *
+     * @return void
+     */
+    public function setSqlDbMap(PhingFile $sqldbmap)
+    {
+        $this->sqldbmap = $sqldbmap;
     } // main()
 
 }

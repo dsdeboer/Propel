@@ -19,69 +19,9 @@ require_once dirname(__FILE__) . '/../Column.php';
  */
 class PropelColumnDiff
 {
-    protected $changedProperties = array();
+    protected $changedProperties = [];
     protected $fromColumn;
     protected $toColumn;
-
-    /**
-     * Setter for the changedProperties property
-     *
-     * @param array $changedProperties
-     */
-    public function setChangedProperties($changedProperties)
-    {
-        $this->changedProperties = $changedProperties;
-    }
-
-    /**
-     * Getter for the changedProperties property
-     *
-     * @return array
-     */
-    public function getChangedProperties()
-    {
-        return $this->changedProperties;
-    }
-
-    /**
-     * Setter for the fromColumn property
-     *
-     * @param Column $fromColumn
-     */
-    public function setFromColumn(Column $fromColumn)
-    {
-        $this->fromColumn = $fromColumn;
-    }
-
-    /**
-     * Getter for the fromColumn property
-     *
-     * @return Column
-     */
-    public function getFromColumn()
-    {
-        return $this->fromColumn;
-    }
-
-    /**
-     * Setter for the toColumn property
-     *
-     * @param Column $toColumn
-     */
-    public function setToColumn(Column $toColumn)
-    {
-        $this->toColumn = $toColumn;
-    }
-
-    /**
-     * Getter for the toColumn property
-     *
-     * @return Column
-     */
-    public function getToColumn()
-    {
-        return $this->toColumn;
-    }
 
     /**
      * Get the reverse diff for this diff
@@ -97,13 +37,73 @@ class PropelColumnDiff
         $diff->setToColumn($this->getFromColumn());
 
         // properties
-        $changedProperties = array();
+        $changedProperties = [];
         foreach ($this->getChangedProperties() as $name => $propertyChange) {
             $changedProperties[$name] = array_reverse($propertyChange);
         }
         $diff->setChangedProperties($changedProperties);
 
         return $diff;
+    }
+
+    /**
+     * Getter for the toColumn property
+     *
+     * @return Column
+     */
+    public function getToColumn()
+    {
+        return $this->toColumn;
+    }
+
+    /**
+     * Setter for the toColumn property
+     *
+     * @param Column $toColumn
+     */
+    public function setToColumn(Column $toColumn)
+    {
+        $this->toColumn = $toColumn;
+    }
+
+    /**
+     * Getter for the fromColumn property
+     *
+     * @return Column
+     */
+    public function getFromColumn()
+    {
+        return $this->fromColumn;
+    }
+
+    /**
+     * Setter for the fromColumn property
+     *
+     * @param Column $fromColumn
+     */
+    public function setFromColumn(Column $fromColumn)
+    {
+        $this->fromColumn = $fromColumn;
+    }
+
+    /**
+     * Getter for the changedProperties property
+     *
+     * @return array
+     */
+    public function getChangedProperties()
+    {
+        return $this->changedProperties;
+    }
+
+    /**
+     * Setter for the changedProperties property
+     *
+     * @param array $changedProperties
+     */
+    public function setChangedProperties($changedProperties)
+    {
+        $this->changedProperties = $changedProperties;
     }
 
     public function __toString()

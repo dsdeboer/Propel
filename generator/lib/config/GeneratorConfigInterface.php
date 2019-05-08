@@ -16,8 +16,8 @@ interface GeneratorConfigInterface
     /**
      * Gets a configured data model builder class for specified table and based on type.
      *
-     * @param Table  $table
-     * @param string $type  The type of builder ('ddl', 'sql', etc.)
+     * @param Table $table
+     * @param string $type The type of builder ('ddl', 'sql', etc.)
      *
      * @return DataModelBuilder
      */
@@ -43,7 +43,7 @@ interface GeneratorConfigInterface
      * Sets a specific propel (renamed) property from the build.
      *
      * @param string $name
-     * @param mixed  $value
+     * @param mixed $value
      */
     public function setBuildProperty($name, $value);
 

@@ -16,15 +16,15 @@
  */
 class DelegateBehavior extends Behavior
 {
-    const ONE_TO_ONE = 1;
+    const ONE_TO_ONE  = 1;
     const MANY_TO_ONE = 2;
 
     // default parameters value
-    protected $parameters = array(
+    protected $parameters = [
         'to' => ''
-    );
+    ];
 
-    protected $delegates = array();
+    protected $delegates = [];
 
     /**
      * Lists the delegates and checks that the behavior can use them,
@@ -32,8 +32,8 @@ class DelegateBehavior extends Behavior
      */
     public function modifyTable()
     {
-        $table = $this->getTable();
-        $database = $table->getDatabase();
+        $table     = $this->getTable();
+        $database  = $table->getDatabase();
         $delegates = explode(',', $this->parameters['to']);
         foreach ($delegates as $delegate) {
             $delegate = $database->getTablePrefix() . trim($delegate);
@@ -49,9 +49,10 @@ class DelegateBehavior extends Behavior
                 if (in_array($table->getName(), $delegateTable->getForeignTableNames())) {
                     // existing one-to-one relationship
                     $fks = $delegateTable->getForeignKeysReferencingTable($this->getTable()->getName());
-                    $fk = $fks[0];
+                    $fk  = $fks[0];
                     if (!$fk->isLocalPrimaryKey()) {
-                        throw new InvalidArgumentException(sprintf('Delegate table "%s" has a relationship with table "%s", but it\'s a one-to-many relationship. The `delegate` behavior only supports one-to-one relationships in this case.', $delegate, $table->getName()));
+                        throw new InvalidArgumentException(sprintf('Delegate table "%s" has a relationship with table "%s", but it\'s a one-to-many relationship. The `delegate` behavior only supports one-to-one relationships in this case.',
+                            $delegate, $table->getName()));
                     }
                 } else {
                     // no relationship yet: must be created
@@ -61,6 +62,11 @@ class DelegateBehavior extends Behavior
             }
             $this->delegates[$delegate] = $type;
         }
+    }
+
+    protected function getDelegateTable($delegateTableName)
+    {
+        return $this->getTable()->getDatabase()->getTable($delegateTableName);
     }
 
     protected function relateDelegateToMainTable($delegateTable, $mainTable)
@@ -87,27 +93,22 @@ class DelegateBehavior extends Behavior
         $delegateTable->addForeignKey($fk);
     }
 
-    protected function getDelegateTable($delegateTableName)
-    {
-        return $this->getTable()->getDatabase()->getTable($delegateTableName);
-    }
-
     public function objectCall($builder)
     {
         $script = '';
         foreach ($this->delegates as $delegate => $type) {
             $delegateTable = $this->getDelegateTable($delegate);
             if ($type == self::ONE_TO_ONE) {
-                $fks = $delegateTable->getForeignKeysReferencingTable($this->getTable()->getName());
-                $fk = $fks[0];
-                $ARFQCN = $builder->getNewStubObjectBuilder($fk->getTable())->getFullyQualifiedClassname();
-                $ARClassName = $builder->getNewStubObjectBuilder($fk->getTable())->getClassname();
+                $fks          = $delegateTable->getForeignKeysReferencingTable($this->getTable()->getName());
+                $fk           = $fks[0];
+                $ARFQCN       = $builder->getNewStubObjectBuilder($fk->getTable())->getFullyQualifiedClassname();
+                $ARClassName  = $builder->getNewStubObjectBuilder($fk->getTable())->getClassname();
                 $relationName = $builder->getRefFKPhpNameAffix($fk, $plural = false);
             } else {
-                $fks = $this->getTable()->getForeignKeysReferencingTable($delegate);
-                $fk = $fks[0];
-                $ARFQCN = $builder->getNewStubObjectBuilder($delegateTable)->getFullyQualifiedClassname();
-                $ARClassName = $builder->getNewStubObjectBuilder($delegateTable)->getClassname();
+                $fks          = $this->getTable()->getForeignKeysReferencingTable($delegate);
+                $fk           = $fks[0];
+                $ARFQCN       = $builder->getNewStubObjectBuilder($delegateTable)->getFullyQualifiedClassname();
+                $ARClassName  = $builder->getNewStubObjectBuilder($delegateTable)->getClassname();
                 $relationName = $builder->getFKPhpNameAffix($fk);
             }
             $script .= "

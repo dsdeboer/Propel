@@ -79,14 +79,14 @@ abstract class DataSQLBuilder extends DataModelBuilder
      */
     public function buildRowSql(DataRow $row)
     {
-        $sql = "";
+        $sql      = "";
         $platform = $this->getPlatform();
-        $table = $this->getTable();
+        $table    = $this->getTable();
 
         $sql .= "INSERT INTO " . $this->quoteIdentifier($this->getTable()->getName()) . " (";
 
         // add column names to SQL
-        $colNames = array();
+        $colNames = [];
         foreach ($row->getColumnValues() as $colValue) {
             $colNames[] = $this->quoteIdentifier($colValue->getColumn()->getName());
         }
@@ -95,7 +95,7 @@ abstract class DataSQLBuilder extends DataModelBuilder
 
         $sql .= ") VALUES (";
 
-        $colVals = array();
+        $colVals = [];
         foreach ($row->getColumnValues() as $colValue) {
             $colVals[] = $this->getColumnValueSql($colValue);
         }
@@ -123,6 +123,18 @@ abstract class DataSQLBuilder extends DataModelBuilder
     }
 
     /**
+     * Gets a representation of a timestamp value suitable for use in a SQL statement.
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public function getTimestampSql($value)
+    {
+        return "'" . date('Y-m-d H:i:s', strtotime($value)) . "'";
+    }
+
+    /**
      * Gets a representation of a binary value suitable for use in a SQL statement.
      * Default behavior is true = 1, false = 0.
      *
@@ -132,7 +144,7 @@ abstract class DataSQLBuilder extends DataModelBuilder
      */
     protected function getBooleanSql($value)
     {
-        return (int) $value;
+        return (int)$value;
     }
 
     /**
@@ -190,7 +202,7 @@ abstract class DataSQLBuilder extends DataModelBuilder
      */
     protected function getDecimalSql($value)
     {
-        return (float) $value;
+        return (float)$value;
     }
 
     /**
@@ -202,7 +214,7 @@ abstract class DataSQLBuilder extends DataModelBuilder
      */
     protected function getDoubleSql($value)
     {
-        return (double) $value;
+        return (double)$value;
     }
 
     /**
@@ -214,7 +226,7 @@ abstract class DataSQLBuilder extends DataModelBuilder
      */
     protected function getFloatSql($value)
     {
-        return (float) $value;
+        return (float)$value;
     }
 
     /**
@@ -226,7 +238,7 @@ abstract class DataSQLBuilder extends DataModelBuilder
      */
     protected function getIntSql($value)
     {
-        return (int) $value;
+        return (int)$value;
     }
 
     /**
@@ -261,17 +273,5 @@ abstract class DataSQLBuilder extends DataModelBuilder
     protected function getTimeSql($paramIndex, $value)
     {
         return "'" . date('H:i:s', strtotime($value)) . "'";
-    }
-
-    /**
-     * Gets a representation of a timestamp value suitable for use in a SQL statement.
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    public function getTimestampSql($value)
-    {
-        return "'" . date('Y-m-d H:i:s', strtotime($value)) . "'";
     }
 }

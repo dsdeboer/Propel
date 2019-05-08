@@ -23,10 +23,10 @@ require_once dirname(__FILE__) . '/Pluralizer.php';
  */
 class StandardEnglishPluralizer implements Pluralizer
 {
-    protected $_plural = array(
-        '(matr|vert|ind)(ix|ex)' => '\1ices',
+    protected $_plural = [
+        '(matr|vert|ind)(ix|ex)'                                             => '\1ices',
         '(alumn|bacill|cact|foc|fung|nucle|radi|stimul|syllab|termin|vir)us' => '\1i',
-        '(buffal|tomat)o' => '\1oes',
+        '(buffal|tomat)o'                                                    => '\1oes',
 
         'x'  => 'xes',
         'ch' => 'ches',
@@ -63,7 +63,7 @@ class StandardEnglishPluralizer implements Pluralizer
         'foot'  => 'feet',
         'goose' => 'geese',
         'tooth' => 'teeth',
-        'quiz' => 'quizzes',
+        'quiz'  => 'quizzes',
         'alias' => 'aliases',
 
         'alf'  => 'alves',
@@ -72,9 +72,9 @@ class StandardEnglishPluralizer implements Pluralizer
         'arf'  => 'arves',
         'nife' => 'nives',
         'life' => 'lives'
-    );
+    ];
 
-    protected $_irregular = array(
+    protected $_irregular = [
         'leaf'   => 'leaves',
         'loaf'   => 'loaves',
         'move'   => 'moves',
@@ -91,11 +91,11 @@ class StandardEnglishPluralizer implements Pluralizer
         'mythos' => 'mythoi',
         'testis' => 'testes',
         'numen'  => 'numina',
-        'quiz' => 'quizzes',
-        'alias' => 'aliases',
-    );
+        'quiz'   => 'quizzes',
+        'alias'  => 'aliases',
+    ];
 
-    private $_uncountable = array(
+    private $_uncountable = [
         'sheep',
         'fish',
         'deer',
@@ -107,7 +107,7 @@ class StandardEnglishPluralizer implements Pluralizer
         'equipment',
         'news',
         'people',
-    );
+    ];
 
     /**
      * Generate a plural name based on the passed in root.

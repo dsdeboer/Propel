@@ -21,16 +21,16 @@ require_once dirname(__FILE__) . '/ArchivableBehaviorQueryBuilderModifier.php';
 class ArchivableBehavior extends Behavior
 {
     // default parameters value
-    protected $parameters = array(
-        'archive_table'       => '',
-        'archive_phpname'     => NULL,
-        'archive_class'       => '',
-        'log_archived_at'     => 'true',
-        'archived_at_column'  => 'archived_at',
-        'archive_on_insert'   => 'false',
-        'archive_on_update'   => 'false',
-        'archive_on_delete'   => 'true',
-    );
+    protected $parameters = [
+        'archive_table'      => '',
+        'archive_phpname'    => null,
+        'archive_class'      => '',
+        'log_archived_at'    => 'true',
+        'archived_at_column' => 'archived_at',
+        'archive_on_insert'  => 'false',
+        'archive_on_update'  => 'false',
+        'archive_on_delete'  => 'true',
+    ];
 
     protected $archiveTable;
     protected $objectBuilderModifier;
@@ -64,18 +64,18 @@ class ArchivableBehavior extends Behavior
 
     protected function addArchiveTable()
     {
-        $table = $this->getTable();
-        $database = $table->getDatabase();
+        $table            = $this->getTable();
+        $database         = $table->getDatabase();
         $archiveTableName = $this->getParameter('archive_table') ? $this->getParameter('archive_table') : ($this->getTable()->getName() . '_archive');
         if (!$database->hasTable($archiveTableName)) {
             // create the version table
-            $archiveTable = $database->addTable(array(
+            $archiveTable                 = $database->addTable([
                 'name'      => $archiveTableName,
                 'phpName'   => $this->getParameter('archive_phpname'),
                 'package'   => $table->getPackage(),
                 'schema'    => $table->getSchema(),
                 'namespace' => $table->getNamespace() ? '\\' . $table->getNamespace() : null,
-            ));
+            ]);
             $archiveTable->isArchiveTable = true;
             // copy all the columns
             foreach ($table->getColumns() as $column) {
@@ -90,10 +90,10 @@ class ArchivableBehavior extends Behavior
             }
             // add archived_at column
             if ($this->getParameter('log_archived_at') == 'true') {
-                $archiveTable->addColumn(array(
+                $archiveTable->addColumn([
                     'name' => $this->getParameter('archived_at_column'),
                     'type' => 'TIMESTAMP'
-                ));
+                ]);
             }
             // do not copy foreign keys
             // copy the indices
@@ -108,9 +108,9 @@ class ArchivableBehavior extends Behavior
                 $index = new Index();
                 foreach ($unique->getColumns() as $columnName) {
                     if ($size = $unique->getColumnSize($columnName)) {
-                        $index->addColumn(array('name' => $columnName, 'size' => $size));
+                        $index->addColumn(['name' => $columnName, 'size' => $size]);
                     } else {
-                        $index->addColumn(array('name' => $columnName));
+                        $index->addColumn(['name' => $columnName]);
                     }
                 }
                 $archiveTable->addIndex($index);
@@ -125,14 +125,6 @@ class ArchivableBehavior extends Behavior
         }
     }
 
-    /**
-     * @return Table
-     */
-    public function getArchiveTable()
-    {
-        return $this->archiveTable;
-    }
-
     public function getArchiveTablePhpName($builder)
     {
         if ($this->hasArchiveClass()) {
@@ -142,6 +134,19 @@ class ArchivableBehavior extends Behavior
         return $builder->getNewStubObjectBuilder($this->getArchiveTable())->getClassname();
     }
 
+    public function hasArchiveClass()
+    {
+        return $this->getParameter('archive_class') != '';
+    }
+
+    /**
+     * @return Table
+     */
+    public function getArchiveTable()
+    {
+        return $this->archiveTable;
+    }
+
     public function getArchiveTableQueryName($builder)
     {
         if ($this->hasArchiveClass()) {
@@ -149,11 +154,6 @@ class ArchivableBehavior extends Behavior
         }
 
         return $builder->getNewStubQueryBuilder($this->getArchiveTable())->getClassname();
-    }
-
-    public function hasArchiveClass()
-    {
-        return $this->getParameter('archive_class') != '';
     }
 
     /**

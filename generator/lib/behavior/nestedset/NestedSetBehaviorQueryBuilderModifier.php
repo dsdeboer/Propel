@@ -21,25 +21,7 @@ class NestedSetBehaviorQueryBuilderModifier
     public function __construct($behavior)
     {
         $this->behavior = $behavior;
-        $this->table = $behavior->getTable();
-    }
-
-    protected function getParameter($key)
-    {
-        return $this->behavior->getParameter($key);
-    }
-
-    protected function getColumn($name)
-    {
-        return $this->behavior->getColumnForParameter($name);
-    }
-
-    protected function setBuilder($builder)
-    {
-        $this->builder = $builder;
-        $this->objectClassname = $builder->getStubObjectBuilder()->getClassname();
-        $this->queryClassname = $builder->getStubQueryBuilder()->getClassname();
-        $this->peerClassname = $builder->getStubPeerBuilder()->getClassname();
+        $this->table    = $behavior->getTable();
     }
 
     public function queryMethods($builder)
@@ -69,6 +51,14 @@ class NestedSetBehaviorQueryBuilderModifier
         $this->addFindTree($script);
 
         return $script;
+    }
+
+    protected function setBuilder($builder)
+    {
+        $this->builder         = $builder;
+        $this->objectClassname = $builder->getStubObjectBuilder()->getClassname();
+        $this->queryClassname  = $builder->getStubQueryBuilder()->getClassname();
+        $this->peerClassname   = $builder->getStubPeerBuilder()->getClassname();
     }
 
     protected function addTreeRoots(&$script)
@@ -106,7 +96,7 @@ public function inTree(\$scope = null)
     protected function addDescendantsOf(&$script)
     {
         $objectName = '$' . $this->table->getStudlyPhpName();
-        $script .= "
+        $script     .= "
 /**
  * Filter the query to restrict the result to descendants of an object
  *
@@ -131,7 +121,7 @@ public function descendantsOf($objectName)
     protected function addBranchOf(&$script)
     {
         $objectName = '$' . $this->table->getStudlyPhpName();
-        $script .= "
+        $script     .= "
 /**
  * Filter the query to restrict the result to the branch of an object.
  * Same as descendantsOf(), except that it includes the object passed as parameter in the result
@@ -157,7 +147,7 @@ public function branchOf($objectName)
     protected function addChildrenOf(&$script)
     {
         $objectName = '$' . $this->table->getStudlyPhpName();
-        $script .= "
+        $script     .= "
 /**
  * Filter the query to restrict the result to children of an object
  *
@@ -177,7 +167,7 @@ public function childrenOf($objectName)
     protected function addSiblingsOf(&$script)
     {
         $objectName = '$' . $this->table->getStudlyPhpName();
-        $script .= "
+        $script     .= "
 /**
  * Filter the query to restrict the result to siblings of an object.
  * The result does not include the object passed as parameter.
@@ -204,7 +194,7 @@ public function siblingsOf($objectName, PropelPDO \$con = null)
     protected function addAncestorsOf(&$script)
     {
         $objectName = '$' . $this->table->getStudlyPhpName();
-        $script .= "
+        $script     .= "
 /**
  * Filter the query to restrict the result to ancestors of an object
  *
@@ -229,7 +219,7 @@ public function ancestorsOf($objectName)
     protected function addRootsOf(&$script)
     {
         $objectName = '$' . $this->table->getStudlyPhpName();
-        $script .= "
+        $script     .= "
 /**
  * Filter the query to restrict the result to roots of an object.
  * Same as ancestorsOf(), except that it includes the object passed as parameter in the result
@@ -301,7 +291,7 @@ public function orderByLevel(\$reverse = false)
     protected function addFindRoot(&$script)
     {
         $useScope = $this->behavior->useScope();
-        $script .= "
+        $script   .= "
 /**
  * Returns " . ($useScope ? 'a' : 'the') . " root node for the tree
  *";
@@ -350,7 +340,7 @@ public function findRoots(\$con = null)
     protected function addFindTree(&$script)
     {
         $useScope = $this->behavior->useScope();
-        $script .= "
+        $script   .= "
 /**
  * Returns " . ($useScope ? 'a' : 'the') . " tree of objects
  *";
@@ -375,5 +365,15 @@ public function findTree(" . ($useScope ? "\$scope = null, " : "") . "\$con = nu
         ->find(\$con);
 }
 ";
+    }
+
+    protected function getParameter($key)
+    {
+        return $this->behavior->getParameter($key);
+    }
+
+    protected function getColumn($name)
+    {
+        return $this->behavior->getColumnForParameter($name);
     }
 }

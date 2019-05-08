@@ -27,7 +27,7 @@
         "generator/lib"
     ],
     "require": {
-        "php": ">=5.6.4,<=7.1",
+        "php": ">=5.6 <7.1",
         "phing/phing": "~2.4"
     },
     "replace": {

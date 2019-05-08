@@ -18,10 +18,10 @@
 class QueryCacheBehavior extends Behavior
 {
     // default parameters value
-    protected $parameters = array(
-        'backend'     => 'apc',
-        'lifetime'    => 3600,
-    );
+    protected $parameters = [
+        'backend'  => 'apc',
+        'lifetime' => 3600,
+    ];
 
     public function queryAttributes($builder)
     {
@@ -48,7 +48,7 @@ class QueryCacheBehavior extends Behavior
     {
         $builder->declareClasses('BasePeer');
         $this->peerClassname = $builder->getStubPeerBuilder()->getClassname();
-        $script = '';
+        $script              = '';
         $this->addSetQueryKey($script);
         $this->addGetQueryKey($script);
         $this->addCacheContains($script);
@@ -109,31 +109,6 @@ public function cacheContains(\$key)
 ";
     }
 
-    protected function addCacheStore(&$script)
-    {
-        $script .= "
-public function cacheStore(\$key, \$value, \$lifetime = " . $this->getParameter('lifetime') . ")
-{";
-        switch ($this->getParameter('backend')) {
-            case 'apc':
-                $script .= "
-    apc_store(\$key, \$value, \$lifetime);";
-                break;
-            case 'array':
-                $script .= "
-    self::\$cacheBackend[\$key] = \$value;";
-                break;
-            case 'custom':
-            default:
-                $script .= "
-    throw new PropelException('You must override the cacheContains(), cacheStore(), and cacheFetch() methods to enable query cache');";
-                break;
-        }
-        $script .= "
-}
-";
-    }
-
     protected function addCacheFetch(&$script)
     {
         $script .= "
@@ -149,6 +124,31 @@ public function cacheFetch(\$key)
                 $script .= "
 
     return isset(self::\$cacheBackend[\$key]) ? self::\$cacheBackend[\$key] : null;";
+                break;
+            case 'custom':
+            default:
+                $script .= "
+    throw new PropelException('You must override the cacheContains(), cacheStore(), and cacheFetch() methods to enable query cache');";
+                break;
+        }
+        $script .= "
+}
+";
+    }
+
+    protected function addCacheStore(&$script)
+    {
+        $script .= "
+public function cacheStore(\$key, \$value, \$lifetime = " . $this->getParameter('lifetime') . ")
+{";
+        switch ($this->getParameter('backend')) {
+            case 'apc':
+                $script .= "
+    apc_store(\$key, \$value, \$lifetime);";
+                break;
+            case 'array':
+                $script .= "
+    self::\$cacheBackend[\$key] = \$value;";
                 break;
             case 'custom':
             default:

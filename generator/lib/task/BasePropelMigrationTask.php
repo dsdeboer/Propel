@@ -40,6 +40,16 @@ abstract class BasePropelMigrationTask extends AbstractPropelTask
     protected $migrationTable = 'propel_migration';
 
     /**
+     * Get the migration Table name
+     *
+     * @return string
+     */
+    public function getMigrationTable()
+    {
+        return $this->migrationTable;
+    }
+
+    /**
      * Set the migration Table name
      *
      * @param string $migrationTable
@@ -50,13 +60,13 @@ abstract class BasePropelMigrationTask extends AbstractPropelTask
     }
 
     /**
-     * Get the migration Table name
+     * Get the output directory.
      *
      * @return string
      */
-    public function getMigrationTable()
+    public function getOutputDirectory()
     {
-        return $this->migrationTable;
+        return $this->outputDirectory;
     }
 
     /**
@@ -81,16 +91,6 @@ abstract class BasePropelMigrationTask extends AbstractPropelTask
         } catch (IOException $ioe) {
             throw new BuildException($ioe);
         }
-    }
-
-    /**
-     * Get the output directory.
-     *
-     * @return string
-     */
-    public function getOutputDirectory()
-    {
-        return $this->outputDirectory;
     }
 
     /**

@@ -26,7 +26,7 @@
 class PropelSchemaValidator
 {
     protected $appData;
-    protected $errors = array();
+    protected $errors = [];
 
     public function __construct(AppData $appData)
     {
@@ -47,13 +47,13 @@ class PropelSchemaValidator
 
     protected function validateDatabaseTables(Database $database)
     {
-        $phpNames = array();
-        $namespaces = array();
+        $phpNames   = [];
+        $namespaces = [];
         foreach ($database->getTables() as $table) {
             $list = &$phpNames;
             if ($table->getNamespace()) {
                 if (!isset($namespaces[$table->getNamespace()])) {
-                    $namespaces[$table->getNamespace()] = array();
+                    $namespaces[$table->getNamespace()] = [];
                 }
 
                 $list = &$namespaces[$table->getNamespace()];
@@ -69,17 +69,18 @@ class PropelSchemaValidator
 
     protected function validateTableAttributes(Table $table)
     {
-        $reservedTableNames = array('table_name');
-        $tableName = strtolower($table->getName());
+        $reservedTableNames = ['table_name'];
+        $tableName          = strtolower($table->getName());
         if (in_array($tableName, $reservedTableNames)) {
             $this->errors[] = sprintf('Table "%s" uses a reserved keyword as name', $table->getName());
         }
         if ($table->getIsCrossRef()) {
-            $fkTables = array();
+            $fkTables = [];
             foreach ($table->getForeignKeys() as $fk) {
                 $foreignTableName = $fk->getForeignTableName();
                 if (isset($fkTables[$foreignTableName])) {
-                    $this->errors[] = sprintf('Table "%s" implements an equal nest relationship for table "%s". This feature is not supported', $table->getName(), $foreignTableName);
+                    $this->errors[] = sprintf('Table "%s" implements an equal nest relationship for table "%s". This feature is not supported', $table->getName(),
+                        $foreignTableName);
                     break;
                 }
                 $fkTables[$foreignTableName] = true;
@@ -92,7 +93,7 @@ class PropelSchemaValidator
         if (!$table->hasPrimaryKey() && !$table->isSkipSql()) {
             $this->errors[] = sprintf('Table "%s" does not have a primary key defined. Propel requires all tables to have a primary key.', $table->getName());
         }
-        $phpNames = array();
+        $phpNames = [];
         foreach ($table->getColumns() as $column) {
             if (in_array($column->getPhpName(), $phpNames)) {
                 $this->errors[] = sprintf('Column "%s" declares a phpName already used in table "%s"', $column->getName(), $table->getName());

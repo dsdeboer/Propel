@@ -24,18 +24,18 @@ require_once 'ConcreteInheritanceParentBehavior.php';
 class ConcreteInheritanceBehavior extends Behavior
 {
     // default parameters value
-    protected $parameters = array(
-        'extends'             => '',
-        'descendant_column'   => 'descendant_class',
-        'copy_data_to_parent' => 'true',
-        'schema'              => '',
+    protected $parameters = [
+        'extends'                  => '',
+        'descendant_column'        => 'descendant_class',
+        'copy_data_to_parent'      => 'true',
+        'schema'                   => '',
         'excluded_parent_behavior' => 'nested_set',
-    );
+    ];
 
     public function modifyTable()
     {
-        $table = $this->getTable();
-        $parentTable = $this->getParentTable();
+        $table                  = $this->getTable();
+        $parentTable            = $this->getParentTable();
         $excludedParentBehavior = explode(',', $this->parameters['excluded_parent_behavior']);
 
         if ($this->isCopyData()) {
@@ -43,7 +43,7 @@ class ConcreteInheritanceBehavior extends Behavior
             if (!$parentTable->hasBehavior('concrete_inheritance_parent')) {
                 $parentBehavior = new ConcreteInheritanceParentBehavior();
                 $parentBehavior->setName('concrete_inheritance_parent');
-                $parentBehavior->addParameter(array('name' => 'descendant_column', 'value' => $this->getParameter('descendant_column')));
+                $parentBehavior->addParameter(['name' => 'descendant_column', 'value' => $this->getParameter('descendant_column')]);
                 $parentTable->addBehavior($parentBehavior);
                 // The parent table's behavior modifyTable() must be executed before this one
                 $parentBehavior->getTableModifier()->modifyTable();
@@ -106,7 +106,8 @@ class ConcreteInheritanceBehavior extends Behavior
 
         // add the Behaviors of the parent table
         foreach ($parentTable->getBehaviors() as $behavior) {
-            if (in_array($behavior->getName(), $excludedParentBehavior) || $behavior->getName() == 'concrete_inheritance_parent' || $behavior->getName() == 'concrete_inheritance') {
+            if (in_array($behavior->getName(),
+                    $excludedParentBehavior) || $behavior->getName() == 'concrete_inheritance_parent' || $behavior->getName() == 'concrete_inheritance') {
                 continue;
             }
             $copiedBehavior = clone $behavior;
@@ -117,7 +118,7 @@ class ConcreteInheritanceBehavior extends Behavior
 
     protected function getParentTable()
     {
-        $database = $this->getTable()->getDatabase();
+        $database  = $this->getTable()->getDatabase();
         $tableName = $database->getTablePrefix() . $this->getParameter('extends');
         if ($database->getPlatform()->supportsSchemas() && $this->getParameter('schema')) {
             $tableName = $this->getParameter('schema') . '.' . $tableName;
@@ -183,7 +184,7 @@ class ConcreteInheritanceBehavior extends Behavior
             return;
         }
         $this->builder = $builder;
-        $script = '';
+        $script        = '';
         $this->addObjectGetParentOrCreate($script);
         $this->addObjectGetSyncParent($script);
 
@@ -194,7 +195,7 @@ class ConcreteInheritanceBehavior extends Behavior
     {
         $parentTable = $this->getParentTable();
         $parentClass = $this->builder->getNewStubObjectBuilder($parentTable)->getClassname();
-        $script .= "
+        $script      .= "
 /**
  * Get or Create the parent " . $parentClass . " object of the current object
  *
@@ -231,9 +232,9 @@ public function getParentOrCreate(\$con = null)
     protected function addObjectGetSyncParent(&$script)
     {
         $parentTable = $this->getParentTable();
-        $pkeys = $parentTable->getPrimaryKey();
-        $cptype = $pkeys[0]->getPhpType();
-        $script .= "
+        $pkeys       = $parentTable->getPrimaryKey();
+        $cptype      = $pkeys[0]->getPhpType();
+        $script      .= "
 /**
  * Create or Update the parent " . $parentTable->getPhpName() . " object
  * And return its primary key
@@ -248,7 +249,7 @@ public function getSyncParent(\$con = null)
                 continue;
             }
             $phpName = $column->getPhpName();
-            $script .= "
+            $script  .= "
     \$parent->set{$phpName}(\$this->get{$phpName}());";
         }
         foreach ($parentTable->getForeignKeys() as $fk) {
@@ -256,7 +257,7 @@ public function getSyncParent(\$con = null)
                 continue;
             }
             $refPhpName = $this->builder->getFKPhpNameAffix($fk, $plural = false);
-            $script .= "
+            $script     .= "
     if (\$this->get" . $refPhpName . "() && \$this->get" . $refPhpName . "()->isNew()) {
         \$parent->set" . $refPhpName . "(\$this->get" . $refPhpName . "());
     }";

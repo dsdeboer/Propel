@@ -22,39 +22,7 @@ class NestedSetBehaviorPeerBuilderModifier
     public function __construct($behavior)
     {
         $this->behavior = $behavior;
-        $this->table = $behavior->getTable();
-    }
-
-    protected function getParameter($key)
-    {
-        return $this->behavior->getParameter($key);
-    }
-
-    protected function getColumn($name)
-    {
-        return $this->behavior->getColumnForParameter($name);
-    }
-
-    protected function getColumnAttribute($name)
-    {
-        return strtolower($this->getColumn($name)->getName());
-    }
-
-    protected function getColumnConstant($name)
-    {
-        return $this->getColumn($name)->getName();
-    }
-
-    protected function getColumnPhpName($name)
-    {
-        return $this->getColumn($name)->getPhpName();
-    }
-
-    protected function setBuilder($builder)
-    {
-        $this->builder = $builder;
-        $this->objectClassname = $builder->getStubObjectBuilder()->getClassname();
-        $this->peerClassname = $builder->getStubPeerBuilder()->getClassname();
+        $this->table    = $behavior->getTable();
     }
 
     public function staticAttributes($builder)
@@ -90,6 +58,11 @@ const SCOPE_COL = '" . $tableName . '.' . $this->getColumnConstant('scope_column
         return $script;
     }
 
+    protected function getColumnConstant($name)
+    {
+        return $this->getColumn($name)->getName();
+    }
+
     public function staticMethods($builder)
     {
         $this->setBuilder($builder);
@@ -112,35 +85,22 @@ const SCOPE_COL = '" . $tableName . '.' . $this->getColumnConstant('scope_column
         return $script;
     }
 
-    protected function addSetNegativeScope(&$script)
+    protected function setBuilder($builder)
     {
+        $this->builder         = $builder;
+        $this->objectClassname = $builder->getStubObjectBuilder()->getClassname();
+        $this->peerClassname   = $builder->getStubPeerBuilder()->getClassname();
+    }
 
-        $peerClassname = $this->peerClassname;
-        $script .= "
-/**
- * Updates all scope values for items that has negative left (<=0) values.
- *
- * @param      mixed     \$scope
- * @param      PropelPDO \$con	Connection to use.
- */
-public static function setNegativeScope(\$scope, PropelPDO \$con = null)
-{
-    //adjust scope value to \$scope
-    \$whereCriteria = new Criteria($peerClassname::DATABASE_NAME);
-    \$whereCriteria->add($peerClassname::LEFT_COL, 0, Criteria::LESS_EQUAL);
-
-    \$valuesCriteria = new Criteria($peerClassname::DATABASE_NAME);
-    \$valuesCriteria->add($peerClassname::SCOPE_COL, \$scope, Criteria::EQUAL);
-
-    {$this->builder->getBasePeerClassname()}::doUpdate(\$whereCriteria, \$valuesCriteria, \$con);
-}
-";
+    protected function getParameter($key)
+    {
+        return $this->behavior->getParameter($key);
     }
 
     protected function addRetrieveRoots(&$script)
     {
         $peerClassname = $this->peerClassname;
-        $script .= "
+        $script        .= "
 /**
  * Returns the root nodes for the tree
  *
@@ -162,8 +122,8 @@ public static function retrieveRoots(Criteria \$criteria = null, PropelPDO \$con
     protected function addRetrieveRoot(&$script)
     {
         $peerClassname = $this->peerClassname;
-        $useScope = $this->behavior->useScope();
-        $script .= "
+        $useScope      = $this->behavior->useScope();
+        $script        .= "
 /**
  * Returns the root node for a given scope
  *";
@@ -193,8 +153,8 @@ public static function retrieveRoot(" . ($useScope ? "\$scope = null, " : "") . 
     protected function addRetrieveTree(&$script)
     {
         $peerClassname = $this->peerClassname;
-        $useScope = $this->behavior->useScope();
-        $script .= "
+        $useScope      = $this->behavior->useScope();
+        $script        .= "
 /**
  * Returns the whole tree node for a given scope
  *";
@@ -227,7 +187,7 @@ public static function retrieveTree(" . ($useScope ? "\$scope = null, " : "") . 
     protected function addIsValid(&$script)
     {
         $objectClassname = $this->objectClassname;
-        $script .= "
+        $script          .= "
 /**
  * Tests if node is valid
  *
@@ -248,8 +208,8 @@ public static function isValid($objectClassname \$node = null)
     protected function addDeleteTree(&$script)
     {
         $peerClassname = $this->peerClassname;
-        $useScope = $this->behavior->useScope();
-        $script .= "
+        $useScope      = $this->behavior->useScope();
+        $script        .= "
 /**
  * Delete an entire tree
  * ";
@@ -283,8 +243,8 @@ public static function deleteTree(" . ($useScope ? "\$scope = null, " : "") . "P
     protected function addShiftRLValues(&$script)
     {
         $peerClassname = $this->peerClassname;
-        $useScope = $this->behavior->useScope();
-        $script .= "
+        $useScope      = $this->behavior->useScope();
+        $script        .= "
 /**
  * Adds \$delta to all L and R values that are >= \$first and <= \$last.
  * '\$delta' can also be negative.
@@ -347,8 +307,8 @@ public static function shiftRLValues(\$delta, \$first, \$last = null" . ($useSco
     protected function addShiftLevel(&$script)
     {
         $peerClassname = $this->peerClassname;
-        $useScope = $this->behavior->useScope();
-        $script .= "
+        $useScope      = $this->behavior->useScope();
+        $script        .= "
 /**
  * Adds \$delta to level for nodes having left value >= \$first and right value <= \$last.
  * '\$delta' can also be negative.
@@ -388,9 +348,9 @@ public static function shiftLevel(\$delta, \$first, \$last" . ($useScope ? ", \$
 
     protected function addUpdateLoadedNodes(&$script)
     {
-        $peerClassname = $this->peerClassname;
+        $peerClassname   = $this->peerClassname;
         $objectClassname = $this->objectClassname;
-        $script .= "
+        $script          .= "
 /**
  * Reload all already loaded nodes to sync them with updated db
  *
@@ -412,12 +372,12 @@ public static function updateLoadedNodes(\$prune = null, PropelPDO \$con = null)
             // already in the pool.
             \$criteria = new Criteria($peerClassname::DATABASE_NAME);";
         if (count($this->table->getPrimaryKey()) === 1) {
-            $pkey = $this->table->getPrimaryKey();
-            $col = array_shift($pkey);
+            $pkey   = $this->table->getPrimaryKey();
+            $col    = array_shift($pkey);
             $script .= "
             \$criteria->add(" . $this->builder->getColumnConstant($col) . ", \$keys, Criteria::IN);";
         } else {
-            $fields = array();
+            $fields = [];
             foreach ($this->table->getPrimaryKey() as $k => $col) {
                 $fields[] = $this->builder->getColumnConstant($col);
             };
@@ -448,7 +408,7 @@ public static function updateLoadedNodes(\$prune = null, PropelPDO \$con = null)
             while (\$row = \$stmt->fetch(PDO::FETCH_NUM)) {
                 \$key = $peerClassname::getPrimaryKeyHashFromRow(\$row, 0);
                 if (null !== (\$object = $peerClassname::getInstanceFromPool(\$key))) {";
-        $n = 0;
+        $n      = 0;
         foreach ($this->table->getColumns() as $col) {
             if ($col->isLazyLoad()) {
                 continue;
@@ -479,11 +439,16 @@ public static function updateLoadedNodes(\$prune = null, PropelPDO \$con = null)
 ";
     }
 
+    protected function getColumnPhpName($name)
+    {
+        return $this->getColumn($name)->getPhpName();
+    }
+
     protected function addMakeRoomForLeaf(&$script)
     {
         $peerClassname = $this->peerClassname;
-        $useScope = $this->behavior->useScope();
-        $script .= "
+        $useScope      = $this->behavior->useScope();
+        $script        .= "
 /**
  * Update the tree to allow insertion of a leaf at the specified position
  *
@@ -510,8 +475,8 @@ public static function makeRoomForLeaf(\$left" . ($useScope ? ", \$scope" : "") 
     protected function addFixLevels(&$script)
     {
         $peerClassname = $this->peerClassname;
-        $useScope = $this->behavior->useScope();
-        $script .= "
+        $useScope      = $this->behavior->useScope();
+        $script        .= "
 /**
  * Update the tree to allow insertion of a leaf at the specified position
  *";
@@ -588,5 +553,40 @@ public static function fixLevels(" . ($useScope ? "\$scope, " : "") . "PropelPDO
     \$stmt->closeCursor();
 }
 ";
+    }
+
+    protected function addSetNegativeScope(&$script)
+    {
+
+        $peerClassname = $this->peerClassname;
+        $script        .= "
+/**
+ * Updates all scope values for items that has negative left (<=0) values.
+ *
+ * @param      mixed     \$scope
+ * @param      PropelPDO \$con	Connection to use.
+ */
+public static function setNegativeScope(\$scope, PropelPDO \$con = null)
+{
+    //adjust scope value to \$scope
+    \$whereCriteria = new Criteria($peerClassname::DATABASE_NAME);
+    \$whereCriteria->add($peerClassname::LEFT_COL, 0, Criteria::LESS_EQUAL);
+
+    \$valuesCriteria = new Criteria($peerClassname::DATABASE_NAME);
+    \$valuesCriteria->add($peerClassname::SCOPE_COL, \$scope, Criteria::EQUAL);
+
+    {$this->builder->getBasePeerClassname()}::doUpdate(\$whereCriteria, \$valuesCriteria, \$con);
+}
+";
+    }
+
+    protected function getColumnAttribute($name)
+    {
+        return strtolower($this->getColumn($name)->getName());
+    }
+
+    protected function getColumn($name)
+    {
+        return $this->behavior->getColumnForParameter($name);
     }
 }

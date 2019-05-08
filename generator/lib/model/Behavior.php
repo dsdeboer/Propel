@@ -24,71 +24,11 @@ class Behavior extends XMLElement
     protected $table;
     protected $database;
     protected $name;
-    protected $parameters = array();
-    protected $isTableModified = false;
+    protected $parameters             = [];
+    protected $isTableModified        = false;
     protected $dirname;
-    protected $additionalBuilders = array();
+    protected $additionalBuilders     = [];
     protected $tableModificationOrder = 50;
-
-    /**
-     * Sets the name of the Behavior
-     *
-     * @param string $name the name of the behavior
-     */
-    public function setName($name)
-    {
-        $this->name = $name;
-    }
-
-    /**
-     * Returns the name of the Behavior
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * Sets the table this behavior is applied to
-     *
-     * @param Table $table the table this behavior is applied to
-     */
-    public function setTable(Table $table)
-    {
-        $this->table = $table;
-    }
-
-    /**
-     * Returns the table this behavior is applied to
-     *
-     * @return Table
-     */
-    public function getTable()
-    {
-        return $this->table;
-    }
-
-    /**
-     * Sets the database this behavior is applied to
-     *
-     * @param Database $database the database this behavior is applied to
-     */
-    public function setDatabase(Database $database)
-    {
-        $this->database = $database;
-    }
-
-    /**
-     * Returns the table this behavior is applied to if behavior is applied to <database> element.
-     *
-     * @return Database
-     */
-    public function getDatabase()
-    {
-        return $this->database;
-    }
 
     /**
      * Add a parameter
@@ -98,8 +38,18 @@ class Behavior extends XMLElement
      */
     public function addParameter($attribute)
     {
-        $attribute = array_change_key_case($attribute, CASE_LOWER);
+        $attribute                            = array_change_key_case($attribute, CASE_LOWER);
         $this->parameters[$attribute['name']] = $attribute['value'];
+    }
+
+    /**
+     * Get the associative array of parameters
+     *
+     * @return array
+     */
+    public function getParameters()
+    {
+        return $this->parameters;
     }
 
     /**
@@ -114,22 +64,14 @@ class Behavior extends XMLElement
     }
 
     /**
-     * Get the associative array of parameters
+     * Get when this behavior must execute its modifyTable() relative to other behaviors.
+     * The bigger the value, the later the behavior is executed. Default is 50.
      *
-     * @return array
+     * @return integer
      */
-    public function getParameters()
+    public function getTableModificationOrder()
     {
-        return $this->parameters;
-    }
-
-    public function getParameter($name)
-    {
-        if (isset($this->parameters[$name])) {
-            return $this->parameters[$name];
-        }
-
-        return null;
+        return $this->tableModificationOrder;
     }
 
     /**
@@ -141,17 +83,6 @@ class Behavior extends XMLElement
     public function setTableModificationOrder($tableModificationOrder)
     {
         $this->tableModificationOrder = $tableModificationOrder;
-    }
-
-    /**
-     * Get when this behavior must execute its modifyTable() relative to other behaviors.
-     * The bigger the value, the later the behavior is executed. Default is 50.
-     *
-     * @return integer
-     */
-    public function getTableModificationOrder()
-    {
-        return $this->tableModificationOrder;
     }
 
     /**
@@ -169,6 +100,46 @@ class Behavior extends XMLElement
             $b = clone $this;
             $table->addBehavior($b);
         }
+    }
+
+    /**
+     * Returns the table this behavior is applied to if behavior is applied to <database> element.
+     *
+     * @return Database
+     */
+    public function getDatabase()
+    {
+        return $this->database;
+    }
+
+    /**
+     * Sets the database this behavior is applied to
+     *
+     * @param Database $database the database this behavior is applied to
+     */
+    public function setDatabase(Database $database)
+    {
+        $this->database = $database;
+    }
+
+    /**
+     * Returns the name of the Behavior
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * Sets the name of the Behavior
+     *
+     * @param string $name the name of the behavior
+     */
+    public function setName($name)
+    {
+        $this->name = $name;
     }
 
     /**
@@ -193,15 +164,15 @@ class Behavior extends XMLElement
      * Use Propel's simple templating system to render a PHP file
      * using variables passed as arguments.
      *
-     * @param string $filename    The template file name, relative to the behavior's dirname
-     * @param array  $vars        An associative array of arguments to be rendered
+     * @param string $filename The template file name, relative to the behavior's dirname
+     * @param array $vars An associative array of arguments to be rendered
      * @param string $templateDir The name of the template subdirectory
      *
      * @return string The rendered template
      *
      * @throws InvalidArgumentException
      */
-    public function renderTemplate($filename, $vars = array(), $templateDir = '/templates/')
+    public function renderTemplate($filename, $vars = [], $templateDir = '/templates/')
     {
         $filePath = $this->getDirname() . $templateDir . $filename;
         if (!file_exists($filePath)) {
@@ -216,7 +187,7 @@ class Behavior extends XMLElement
         }
         $template = new PropelTemplate();
         $template->setTemplateFile($filePath);
-        $vars = array_merge($vars, array('behavior' => $this));
+        $vars = array_merge($vars, ['behavior' => $this]);
 
         return $template->render($vars);
     }
@@ -229,7 +200,7 @@ class Behavior extends XMLElement
     protected function getDirname()
     {
         if (null === $this->dirname) {
-            $r = new ReflectionObject($this);
+            $r             = new ReflectionObject($this);
             $this->dirname = dirname($r->getFileName());
         }
 
@@ -250,13 +221,32 @@ class Behavior extends XMLElement
     }
 
     /**
-     * Sets up the Behavior object based on the attributes that were passed to loadFromXML().
+     * Returns the table this behavior is applied to
      *
-     * @see       parent::loadFromXML()
+     * @return Table
      */
-    protected function setupObject()
+    public function getTable()
     {
-        $this->name = $this->getAttribute("name");
+        return $this->table;
+    }
+
+    /**
+     * Sets the table this behavior is applied to
+     *
+     * @param Table $table the table this behavior is applied to
+     */
+    public function setTable(Table $table)
+    {
+        $this->table = $table;
+    }
+
+    public function getParameter($name)
+    {
+        if (isset($this->parameters[$name])) {
+            return $this->parameters[$name];
+        }
+
+        return null;
     }
 
     /**
@@ -309,5 +299,15 @@ class Behavior extends XMLElement
     public function getAdditionalBuilders()
     {
         return $this->additionalBuilders;
+    }
+
+    /**
+     * Sets up the Behavior object based on the attributes that were passed to loadFromXML().
+     *
+     * @see       parent::loadFromXML()
+     */
+    protected function setupObject()
+    {
+        $this->name = $this->getAttribute("name");
     }
 }

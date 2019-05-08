@@ -20,31 +20,26 @@
 class ConcreteInheritanceParentBehavior extends Behavior
 {
     // default parameters value
-    protected $parameters = array(
+    protected $parameters = [
         'descendant_column' => 'descendant_class'
-    );
+    ];
 
     public function modifyTable()
     {
         $table = $this->getTable();
         if (!$table->containsColumn($this->getParameter('descendant_column'))) {
-            $table->addColumn(array(
+            $table->addColumn([
                 'name' => $this->getParameter('descendant_column'),
                 'type' => 'VARCHAR',
                 'size' => 100
-            ));
+            ]);
         }
-    }
-
-    protected function getColumnGetter()
-    {
-        return 'get' . $this->getColumnForParameter('descendant_column')->getPhpName();
     }
 
     public function objectMethods($builder)
     {
         $this->builder = $builder;
-        $script = '';
+        $script        = '';
         $this->addHasChildObject($script);
         $this->addGetChildObject($script);
 
@@ -64,6 +59,11 @@ public function hasChildObject()
     return \$this->" . $this->getColumnGetter() . "() !== null;
 }
 ";
+    }
+
+    protected function getColumnGetter()
+    {
+        return 'get' . $this->getColumnForParameter('descendant_column')->getPhpName();
     }
 
     protected function addGetChildObject(&$script)

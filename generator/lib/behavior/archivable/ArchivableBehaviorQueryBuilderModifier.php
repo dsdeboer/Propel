@@ -21,12 +21,7 @@ class ArchivableBehaviorQueryBuilderModifier
     public function __construct(ArchivableBehavior $behavior)
     {
         $this->behavior = $behavior;
-        $this->table = $behavior->getTable();
-    }
-
-    protected function getParameter($key)
-    {
-        return $this->behavior->getParameter($key);
+        $this->table    = $behavior->getTable();
     }
 
     /**
@@ -112,10 +107,10 @@ if (\$this->archiveOnUpdate) {
      */
     protected function addArchive(QueryBuilder $builder)
     {
-        return $this->behavior->renderTemplate('queryArchive', array(
+        return $this->behavior->renderTemplate('queryArchive', [
             'archiveTablePhpName' => $this->behavior->getArchiveTablePhpName($builder),
             'modelPeerName'       => $builder->getPeerClassname(),
-        ));
+        ]);
     }
 
     /**
@@ -148,5 +143,10 @@ if (\$this->archiveOnUpdate) {
     public function addDeleteWithoutArchive(QueryBuilder $builder)
     {
         return $this->behavior->renderTemplate('queryDeleteWithoutArchive');
+    }
+
+    protected function getParameter($key)
+    {
+        return $this->behavior->getParameter($key);
     }
 }

@@ -25,52 +25,44 @@ class MssqlSchemaParser extends BaseSchemaParser
      *
      * @var        array
      */
-    private static $mssqlTypeMap = array(
-        "binary" => PropelTypes::BINARY,
-        "bit" => PropelTypes::BOOLEAN,
-        "char" => PropelTypes::CHAR,
-        "datetime" => PropelTypes::TIMESTAMP,
-        "decimal() identity"  => PropelTypes::DECIMAL,
-        "decimal"  => PropelTypes::DECIMAL,
-        "image" => PropelTypes::LONGVARBINARY,
-        "int" => PropelTypes::INTEGER,
-        "int identity" => PropelTypes::INTEGER,
-        "integer" => PropelTypes::INTEGER,
-        "money" => PropelTypes::DECIMAL,
-        "nchar" => PropelTypes::CHAR,
-        "ntext" => PropelTypes::LONGVARCHAR,
+    private static $mssqlTypeMap = [
+        "binary"             => PropelTypes::BINARY,
+        "bit"                => PropelTypes::BOOLEAN,
+        "char"               => PropelTypes::CHAR,
+        "datetime"           => PropelTypes::TIMESTAMP,
+        "decimal() identity" => PropelTypes::DECIMAL,
+        "decimal"            => PropelTypes::DECIMAL,
+        "image"              => PropelTypes::LONGVARBINARY,
+        "int"                => PropelTypes::INTEGER,
+        "int identity"       => PropelTypes::INTEGER,
+        "integer"            => PropelTypes::INTEGER,
+        "money"              => PropelTypes::DECIMAL,
+        "nchar"              => PropelTypes::CHAR,
+        "ntext"              => PropelTypes::LONGVARCHAR,
         "numeric() identity" => PropelTypes::NUMERIC,
-        "numeric" => PropelTypes::NUMERIC,
-        "nvarchar" => PropelTypes::VARCHAR,
-        "real" => PropelTypes::REAL,
-        "float" => PropelTypes::FLOAT,
-        "smalldatetime" => PropelTypes::TIMESTAMP,
-        "smallint" => PropelTypes::SMALLINT,
-        "smallint identity" => PropelTypes::SMALLINT,
-        "smallmoney" => PropelTypes::DECIMAL,
-        "sysname" => PropelTypes::VARCHAR,
-        "text" => PropelTypes::LONGVARCHAR,
-        "timestamp" => PropelTypes::BINARY,
-        "tinyint identity" => PropelTypes::TINYINT,
-        "tinyint" => PropelTypes::TINYINT,
-        "uniqueidentifier" => PropelTypes::CHAR,
-        "varbinary" => PropelTypes::VARBINARY,
-        "varbinary(max)" => PropelTypes::CLOB,
-        "varchar" => PropelTypes::VARCHAR,
-        "varchar(max)" => PropelTypes::CLOB,
-    // SQL Server 2000 only
-        "bigint identity" => PropelTypes::BIGINT,
-        "bigint" => PropelTypes::BIGINT,
-        "sql_variant" => PropelTypes::VARCHAR,
-    );
-
-    /**
-     * @see        BaseSchemaParser::getTypeMapping()
-     */
-    protected function getTypeMapping()
-    {
-        return self::$mssqlTypeMap;
-    }
+        "numeric"            => PropelTypes::NUMERIC,
+        "nvarchar"           => PropelTypes::VARCHAR,
+        "real"               => PropelTypes::REAL,
+        "float"              => PropelTypes::FLOAT,
+        "smalldatetime"      => PropelTypes::TIMESTAMP,
+        "smallint"           => PropelTypes::SMALLINT,
+        "smallint identity"  => PropelTypes::SMALLINT,
+        "smallmoney"         => PropelTypes::DECIMAL,
+        "sysname"            => PropelTypes::VARCHAR,
+        "text"               => PropelTypes::LONGVARCHAR,
+        "timestamp"          => PropelTypes::BINARY,
+        "tinyint identity"   => PropelTypes::TINYINT,
+        "tinyint"            => PropelTypes::TINYINT,
+        "uniqueidentifier"   => PropelTypes::CHAR,
+        "varbinary"          => PropelTypes::VARBINARY,
+        "varbinary(max)"     => PropelTypes::CLOB,
+        "varchar"            => PropelTypes::VARCHAR,
+        "varchar(max)"       => PropelTypes::CLOB,
+        // SQL Server 2000 only
+        "bigint identity"    => PropelTypes::BIGINT,
+        "bigint"             => PropelTypes::BIGINT,
+        "sql_variant"        => PropelTypes::VARCHAR,
+    ];
 
     /**
      *
@@ -80,7 +72,7 @@ class MssqlSchemaParser extends BaseSchemaParser
         $stmt = $this->dbh->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME <> 'dtproperties'");
 
         // First load the tables (important that this happen before filling out details of tables)
-        $tables = array();
+        $tables = [];
         while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
             $name = $this->cleanDelimitedIdentifiers($row[0]);
             if ($name == $this->getMigrationTable()) {
@@ -108,6 +100,21 @@ class MssqlSchemaParser extends BaseSchemaParser
     }
 
     /**
+     * according to the identifier definition, we have to clean simple quote (') around the identifier name
+     * returns by mssql
+     *
+     * @see http://msdn.microsoft.com/library/ms175874.aspx
+     *
+     * @param string $identifier
+     *
+     * @return string
+     */
+    protected function cleanDelimitedIdentifiers($identifier)
+    {
+        return preg_replace('/^\'(.*)\'$/U', '$1', $identifier);
+    }
+
+    /**
      * Adds Columns to the specified table.
      *
      * @param Table $table The Table model class to add columns to.
@@ -118,13 +125,13 @@ class MssqlSchemaParser extends BaseSchemaParser
 
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
-            $name = $this->cleanDelimitedIdentifiers($row['COLUMN_NAME']);
-            $type = $row['TYPE_NAME'];
-            $size = $row['LENGTH'];
-            $is_nullable = $row['NULLABLE'];
-            $default = $row['COLUMN_DEF'];
-            $precision = $row['PRECISION'];
-            $scale = $row['SCALE'];
+            $name          = $this->cleanDelimitedIdentifiers($row['COLUMN_NAME']);
+            $type          = $row['TYPE_NAME'];
+            $size          = $row['LENGTH'];
+            $is_nullable   = $row['NULLABLE'];
+            $default       = $row['COLUMN_DEF'];
+            $precision     = $row['PRECISION'];
+            $scale         = $row['SCALE'];
             $autoincrement = false;
             if (strtolower($type) == "int identity") {
                 $autoincrement = true;
@@ -168,16 +175,16 @@ class MssqlSchemaParser extends BaseSchemaParser
                                             INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE ccu2 ON ccu2.CONSTRAINT_NAME = rc1.UNIQUE_CONSTRAINT_NAME
                                     WHERE (ccu1.table_name = '" . $table->getName() . "')");
 
-        $foreignKeys = array(); // local store to avoid duplicates
+        $foreignKeys = []; // local store to avoid duplicates
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
             $lcol = $this->cleanDelimitedIdentifiers($row['COLUMN_NAME']);
             $ftbl = $this->cleanDelimitedIdentifiers($row['FK_TABLE_NAME']);
             $fcol = $this->cleanDelimitedIdentifiers($row['FK_COLUMN_NAME']);
 
-            $foreignTable = $database->getTable($ftbl);
+            $foreignTable  = $database->getTable($ftbl);
             $foreignColumn = $foreignTable->getColumn($fcol);
-            $localColumn = $table->getColumn($lcol);
+            $localColumn   = $table->getColumn($lcol);
 
             if (!isset($foreignKeys[$name])) {
                 $fk = new ForeignKey($name);
@@ -199,10 +206,10 @@ class MssqlSchemaParser extends BaseSchemaParser
     {
         $stmt = $this->dbh->query("sp_indexes_rowset '" . $table->getName() . "'");
 
-        $indexes = array();
+        $indexes = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $colName = $this->cleanDelimitedIdentifiers($row["COLUMN_NAME"]);
-            $name = $this->cleanDelimitedIdentifiers($row['INDEX_NAME']);
+            $name    = $this->cleanDelimitedIdentifiers($row['INDEX_NAME']);
 
             // FIXME -- Add UNIQUE support
             if (!isset($indexes[$name])) {
@@ -235,17 +242,10 @@ class MssqlSchemaParser extends BaseSchemaParser
     }
 
     /**
-     * according to the identifier definition, we have to clean simple quote (') around the identifier name
-     * returns by mssql
-     *
-     * @see http://msdn.microsoft.com/library/ms175874.aspx
-     *
-     * @param string $identifier
-     *
-     * @return string
+     * @see        BaseSchemaParser::getTypeMapping()
      */
-    protected function cleanDelimitedIdentifiers($identifier)
+    protected function getTypeMapping()
     {
-        return preg_replace('/^\'(.*)\'$/U', '$1', $identifier);
+        return self::$mssqlTypeMap;
     }
 }

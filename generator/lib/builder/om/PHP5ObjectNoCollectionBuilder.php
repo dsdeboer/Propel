@@ -38,7 +38,7 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
      * Adds the lazy loader method.
      *
      * @param string &$script The script will be modified in this method.
-     * @param Column $col     The current column.
+     * @param Column $col The current column.
      *
      * @see        parent::addColumnAccessors()
      */
@@ -54,7 +54,7 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
      * Adds the comment for the lazy loader method
      *
      * @param string &$script The script will be modified in this method.
-     * @param Column $col     The current column.
+     * @param Column $col The current column.
      *
      * @see        addLazyLoader()
      **/
@@ -80,13 +80,13 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
      * Adds the function declaration for the lazy loader method
      *
      * @param string &$script The script will be modified in this method.
-     * @param Column $col     The current column.
+     * @param Column $col The current column.
      *
      * @see        addLazyLoader()
      **/
     protected function addLazyLoaderOpen(&$script, Column $col)
     {
-        $cfc = $col->getPhpName();
+        $cfc    = $col->getPhpName();
         $script .= "
     protected function load$cfc(PropelPDO \$con = null)
     {";
@@ -96,14 +96,14 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
      * Adds the function body for the lazy loader method
      *
      * @param string &$script The script will be modified in this method.
-     * @param Column $col     The current column.
+     * @param Column $col The current column.
      *
      * @see        addLazyLoader()
      **/
     protected function addLazyLoaderBody(&$script, Column $col)
     {
         $platform = $this->getPlatform();
-        $clo = strtolower($col->getName());
+        $clo      = strtolower($col->getName());
 
         $script .= "
         \$c = \$this->buildPkeyCriteria();
@@ -148,7 +148,7 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
      * Adds the function close for the lazy loader
      *
      * @param string &$script The script will be modified in this method.
-     * @param Column $col     The current column.
+     * @param Column $col The current column.
      *
      * @see        addLazyLoader()
      **/
@@ -298,7 +298,7 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
         \$criteria = new Criteria(" . $this->getPeerClassname() . "::DATABASE_NAME);
 ";
         foreach ($this->getTable()->getColumns() as $col) {
-            $clo = strtolower($col->getName());
+            $clo    = strtolower($col->getName());
             $script .= "
         if (\$this->isColumnModified(" . $this->getColumnConstant($col) . ")) \$criteria->add(" . $this->getColumnConstant($col) . ", \$this->$clo);";
         }
@@ -383,7 +383,7 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
      */
     protected function addReload(&$script)
     {
-        $table = $this->getTable();
+        $table  = $this->getTable();
         $script .= "
     /**
      * Reloads this object from datastore based on primary key and (optionally) resets all associated objects.
@@ -424,7 +424,7 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
         // support for lazy load columns
         foreach ($table->getColumns() as $col) {
             if ($col->isLazyLoad()) {
-                $clo = strtolower($col->getName());
+                $clo    = strtolower($col->getName());
                 $script .= "
         // Reset the $clo lazy-load column
         \$this->" . $clo . " = null;
@@ -439,7 +439,7 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
 
         foreach ($table->getForeignKeys() as $fk) {
             $varName = $this->getFKVarName($fk);
-            $script .= "
+            $script  .= "
             \$this->" . $varName . " = null;";
         }
 
@@ -486,14 +486,14 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
 
         $varName = $this->getFKVarName($fk);
 
-        $fkPeerBuilder = $this->getNewPeerBuilder($this->getForeignTable($fk));
+        $fkPeerBuilder   = $this->getNewPeerBuilder($this->getForeignTable($fk));
         $fkObjectBuilder = $this->getNewObjectBuilder($this->getForeignTable($fk))->getStubObjectBuilder();
-        $className = $fkObjectBuilder->getClassname(); // get the Classname that has maybe a prefix
+        $className       = $fkObjectBuilder->getClassname(); // get the Classname that has maybe a prefix
 
-        $and = "";
-        $conditional = "";
-        $localColumns = array(); // foreign key local attributes names
-        $argmap = array(); // foreign -> local mapping
+        $and          = "";
+        $conditional  = "";
+        $localColumns = []; // foreign key local attributes names
+        $argmap       = []; // foreign -> local mapping
 
         // If the related columns are a primary key on the foreign table
         // then use retrieveByPk() instead of doSelect() to take advantage
@@ -504,12 +504,12 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
 
             $lfmap = $fk->getLocalForeignMapping();
 
-            $localColumn = $table->getColumn($columnName);
+            $localColumn   = $table->getColumn($columnName);
             $foreignColumn = $fk->getForeignTable()->getColumn($lfmap[$columnName]);
 
-            $column = $table->getColumn($columnName);
-            $cptype = $column->getPhpType();
-            $clo = strtolower($column->getName());
+            $column                                      = $table->getColumn($columnName);
+            $cptype                                      = $column->getPhpType();
+            $clo                                         = strtolower($column->getName());
             $localColumns[$foreignColumn->getPosition()] = '$this->' . $clo;
 
             if ($cptype == "integer" || $cptype == "float" || $cptype == "double") {
@@ -520,8 +520,8 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
                 $conditional .= $and . "\$this->" . $clo . " !== null";
             }
 
-            $argmap[] = array('foreign' => $foreignColumn, 'local' => $localColumn);
-            $and = " && ";
+            $argmap[] = ['foreign' => $foreignColumn, 'local' => $localColumn];
+            $and      = " && ";
         }
 
         ksort($localColumns); // restoring the order of the foreign PK
@@ -551,9 +551,9 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
             $script .= "
             \$c = new Criteria(" . $fkPeerBuilder->getPeerClassname() . "::DATABASE_NAME);";
             foreach ($argmap as $el) {
-                $fcol = $el['foreign'];
-                $lcol = $el['local'];
-                $clo = strtolower($lcol->getName());
+                $fcol   = $el['foreign'];
+                $lcol   = $el['local'];
+                $clo    = strtolower($lcol->getName());
                 $script .= "
             \$c->add(" . $fkPeerBuilder->getColumnConstant($fcol) . ", \$this->" . $clo . ");";
             }
@@ -593,13 +593,13 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
      */
     protected function addRefFKGetJoinMethods(&$script, ForeignKey $refFK)
     {
-        $table = $this->getTable();
-        $tblFK = $refFK->getTable();
+        $table         = $this->getTable();
+        $tblFK         = $refFK->getTable();
         $join_behavior = $this->getGeneratorConfig()->getBuildProperty('useLeftJoinsInDoJoinMethods') ? 'Criteria::LEFT_JOIN' : 'Criteria::INNER_JOIN';
 
-        $peerClassname = $this->getStubPeerBuilder()->getClassname();
-        $relCol = $this->getRefFKPhpNameAffix($refFK, $plural = true);
-        $collName = $this->getRefFKCollVarName($refFK);
+        $peerClassname    = $this->getStubPeerBuilder()->getClassname();
+        $relCol           = $this->getRefFKPhpNameAffix($refFK, $plural = true);
+        $collName         = $this->getRefFKCollVarName($refFK);
         $lastCriteriaName = $this->getRefFKLastCriteriaVarName($refFK);
 
         $fkPeerBuilder = $this->getNewPeerBuilder($tblFK);
@@ -607,7 +607,7 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
         $lastTable = "";
         foreach ($tblFK->getForeignKeys() as $fk2) {
 
-            $tblFK2 = $this->getForeignTable($fk2);
+            $tblFK2    = $this->getForeignTable($fk2);
             $doJoinGet = !$tblFK2->isForReferenceOnly();
 
             // it doesn't make sense to join in rows from the current table, since we are fetching
@@ -651,14 +651,14 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
             } else {
 ";
                 foreach ($refFK->getForeignColumns() as $columnName) {
-                    $column = $table->getColumn($columnName);
-                    $flMap = $refFK->getForeignLocalMapping();
+                    $column    = $table->getColumn($columnName);
+                    $flMap     = $refFK->getForeignLocalMapping();
                     $colFKName = $flMap[$columnName];
-                    $colFK = $tblFK->getColumn($colFKName);
+                    $colFK     = $tblFK->getColumn($colFKName);
                     if ($colFK === null) {
                         throw new EngineException("Column $colFKName not found in " . $tblFK->getName());
                     }
-                    $clo = strtolower($column->getName());
+                    $clo    = strtolower($column->getName());
                     $script .= "
                 \$criteria->add(" . $fkPeerBuilder->getColumnConstant($colFK) . ", \$this->$clo);
 ";
@@ -673,12 +673,12 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
             // one, just return the collection.
 ";
                 foreach ($refFK->getForeignColumns() as $columnName) {
-                    $column = $table->getColumn($columnName);
-                    $flMap = $refFK->getForeignLocalMapping();
+                    $column    = $table->getColumn($columnName);
+                    $flMap     = $refFK->getForeignLocalMapping();
                     $colFKName = $flMap[$columnName];
-                    $colFK = $tblFK->getColumn($colFKName);
-                    $clo = strtolower($column->getName());
-                    $script .= "
+                    $colFK     = $tblFK->getColumn($colFKName);
+                    $clo       = strtolower($column->getName());
+                    $script    .= "
             \$criteria->add(" . $fkPeerBuilder->getColumnConstant($colFK) . ", \$this->$clo);
 ";
                 } /* end foreach ($fk->getForeignColumns() */
@@ -704,7 +704,7 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
      */
     protected function addRefFKInit(&$script, ForeignKey $refFK)
     {
-        $relCol = $this->getRefFKPhpNameAffix($refFK, $plural = true);
+        $relCol   = $this->getRefFKPhpNameAffix($refFK, $plural = true);
         $collName = $this->getRefFKCollVarName($refFK);
 
         $script .= "
@@ -734,7 +734,7 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
         $tblFK = $refFK->getTable();
 
         $joinedTableObjectBuilder = $this->getNewObjectBuilder($refFK->getTable());
-        $className = $joinedTableObjectBuilder->getObjectClassname();
+        $className                = $joinedTableObjectBuilder->getObjectClassname();
 
         $collName = $this->getRefFKCollVarName($refFK);
 
@@ -773,9 +773,9 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
         $peerClassname = $this->getStubPeerBuilder()->getClassname();
 
         $fkPeerBuilder = $this->getNewPeerBuilder($refFK->getTable());
-        $relCol = $this->getRefFKPhpNameAffix($refFK, $plural = true);
+        $relCol        = $this->getRefFKPhpNameAffix($refFK, $plural = true);
 
-        $collName = $this->getRefFKCollVarName($refFK);
+        $collName         = $this->getRefFKCollVarName($refFK);
         $lastCriteriaName = $this->getRefFKLastCriteriaVarName($refFK);
 
         $className = $fkPeerBuilder->getObjectClassname();
@@ -813,11 +813,11 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
 ";
         foreach ($refFK->getLocalColumns() as $colFKName) {
             // $colFKName is local to the referring table (i.e. foreign to this table)
-            $lfmap = $refFK->getLocalForeignMapping();
+            $lfmap       = $refFK->getLocalForeignMapping();
             $localColumn = $this->getTable()->getColumn($lfmap[$colFKName]);
-            $colFK = $refFK->getTable()->getColumn($colFKName);
-            $clo = strtolower($localColumn->getName());
-            $script .= "
+            $colFK       = $refFK->getTable()->getColumn($colFKName);
+            $clo         = strtolower($localColumn->getName());
+            $script      .= "
                 \$criteria->add(" . $fkPeerBuilder->getColumnConstant($colFK) . ", \$this->$clo);
 ";
         } // end foreach ($fk->getForeignColumns()
@@ -834,11 +834,11 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
 ";
         foreach ($refFK->getLocalColumns() as $colFKName) {
             // $colFKName is local to the referring table (i.e. foreign to this table)
-            $lfmap = $refFK->getLocalForeignMapping();
+            $lfmap       = $refFK->getLocalForeignMapping();
             $localColumn = $this->getTable()->getColumn($lfmap[$colFKName]);
-            $colFK = $refFK->getTable()->getColumn($colFKName);
-            $clo = strtolower($localColumn->getName());
-            $script .= "
+            $colFK       = $refFK->getTable()->getColumn($colFKName);
+            $clo         = strtolower($localColumn->getName());
+            $script      .= "
 
                 \$criteria->add(" . $fkPeerBuilder->getColumnConstant($colFK) . ", \$this->$clo);
 ";
@@ -871,9 +871,9 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
 
         $peerClassname = $this->getStubPeerBuilder()->getClassname();
         $fkPeerBuilder = $this->getNewPeerBuilder($refFK->getTable());
-        $relCol = $this->getRefFKPhpNameAffix($refFK, $plural = true);
+        $relCol        = $this->getRefFKPhpNameAffix($refFK, $plural = true);
 
-        $collName = $this->getRefFKCollVarName($refFK);
+        $collName         = $this->getRefFKCollVarName($refFK);
         $lastCriteriaName = $this->getRefFKLastCriteriaVarName($refFK);
 
         $className = $fkPeerBuilder->getObjectClassname();
@@ -909,9 +909,9 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
 ";
         foreach ($refFK->getLocalColumns() as $colFKName) {
             // $colFKName is local to the referring table (i.e. foreign to this table)
-            $lfmap = $refFK->getLocalForeignMapping();
+            $lfmap       = $refFK->getLocalForeignMapping();
             $localColumn = $this->getTable()->getColumn($lfmap[$colFKName]);
-            $colFK = $refFK->getTable()->getColumn($colFKName);
+            $colFK       = $refFK->getTable()->getColumn($colFKName);
 
             $clo = strtolower($localColumn->getName());
 
@@ -933,11 +933,11 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
 ";
         foreach ($refFK->getLocalColumns() as $colFKName) {
             // $colFKName is local to the referring table (i.e. foreign to this table)
-            $lfmap = $refFK->getLocalForeignMapping();
+            $lfmap       = $refFK->getLocalForeignMapping();
             $localColumn = $this->getTable()->getColumn($lfmap[$colFKName]);
-            $colFK = $refFK->getTable()->getColumn($colFKName);
-            $clo = strtolower($localColumn->getName());
-            $script .= "
+            $colFK       = $refFK->getTable()->getColumn($colFKName);
+            $clo         = strtolower($localColumn->getName());
+            $script      .= "
 
                 \$criteria->add(" . $fkPeerBuilder->getColumnConstant($colFK) . ", \$this->$clo);
 ";
@@ -968,8 +968,8 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
         $tblFK = $refFK->getTable();
 
         $joinedTableObjectBuilder = $this->getNewObjectBuilder($refFK->getTable());
-        $joinedTablePeerBuilder = $this->getNewObjectBuilder($refFK->getTable());
-        $className = $joinedTableObjectBuilder->getObjectClassname();
+        $joinedTablePeerBuilder   = $this->getNewObjectBuilder($refFK->getTable());
+        $className                = $joinedTableObjectBuilder->getObjectClassname();
 
         $varName = $this->getPKRefFKVarName($refFK);
 
@@ -998,11 +998,11 @@ class PHP5ObjectNoCollectionBuilder extends PHP5ObjectBuilder
         // we know that at least every column in the primary key of the foreign table
         // is represented in this foreign key
 
-        $params = array();
+        $params = [];
         foreach ($tblFK->getPrimaryKey() as $col) {
             $localColumn = $table->getColumn($lfmap[$col->getName()]);
-            $clo = strtolower($localColumn->getName());
-            $params[] = "\$this->$clo";
+            $clo         = strtolower($localColumn->getName());
+            $params[]    = "\$this->$clo";
         }
 
         $script .= "

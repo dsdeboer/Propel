@@ -32,15 +32,7 @@ abstract class BaseSchemaParser implements SchemaParser
      *
      * @var        array string[]
      */
-    protected $warnings = array();
-
-    /**
-     * GeneratorConfig object holding build properties.
-     *
-     * @var        GeneratorConfig
-     */
-    private $generatorConfig;
-
+    protected $warnings = [];
     /**
      * Map native DB types to Propel types.
      * (Override in subclasses.)
@@ -48,22 +40,25 @@ abstract class BaseSchemaParser implements SchemaParser
      * @var        array
      */
     protected $nativeToPropelTypeMap;
-
     /**
      * Map to hold reverse type mapping (initialized on-demand).
      *
      * @var        array
      */
     protected $reverseTypeMap;
-
     /**
      * Name of the propel migration table - to be ignored in reverse
      *
      * @var string
      */
     protected $migrationTable = 'propel_migration';
-
     protected $platform;
+    /**
+     * GeneratorConfig object holding build properties.
+     *
+     * @var        GeneratorConfig
+     */
+    private $generatorConfig;
 
     /**
      * @param PDO $dbh Optional database connection
@@ -96,16 +91,6 @@ abstract class BaseSchemaParser implements SchemaParser
     }
 
     /**
-     * Setter for the migrationTable property
-     *
-     * @param string $migrationTable
-     */
-    public function setMigrationTable($migrationTable)
-    {
-        $this->migrationTable = $migrationTable;
-    }
-
-    /**
      * Getter for the migrationTable property
      *
      * @return string
@@ -116,13 +101,13 @@ abstract class BaseSchemaParser implements SchemaParser
     }
 
     /**
-     * Pushes a message onto the stack of warnings.
+     * Setter for the migrationTable property
      *
-     * @param string $msg The warning message.
+     * @param string $migrationTable
      */
-    protected function warn($msg)
+    public function setMigrationTable($migrationTable)
     {
-        $this->warnings[] = $msg;
+        $this->migrationTable = $migrationTable;
     }
 
     /**
@@ -133,26 +118,6 @@ abstract class BaseSchemaParser implements SchemaParser
     public function getWarnings()
     {
         return $this->warnings;
-    }
-
-    /**
-     * Sets the GeneratorConfig to use in the parsing.
-     *
-     * @param GeneratorConfigInterface $config
-     */
-    public function setGeneratorConfig(GeneratorConfigInterface $config)
-    {
-        $this->generatorConfig = $config;
-    }
-
-    /**
-     * Gets the GeneratorConfig option.
-     *
-     * @return GeneratorConfig
-     */
-    public function getGeneratorConfig()
-    {
-        return $this->generatorConfig;
     }
 
     /**
@@ -172,11 +137,14 @@ abstract class BaseSchemaParser implements SchemaParser
     }
 
     /**
-     * Gets a type mapping from native type to Propel type.
+     * Pushes a message onto the stack of warnings.
      *
-     * @return array The mapped Propel type.
+     * @param string $msg The warning message.
      */
-    abstract protected function getTypeMapping();
+    protected function warn($msg)
+    {
+        $this->warnings[] = $msg;
+    }
 
     /**
      * Gets a mapped Propel type for specified native type.
@@ -196,6 +164,13 @@ abstract class BaseSchemaParser implements SchemaParser
 
         return null;
     }
+
+    /**
+     * Gets a type mapping from native type to Propel type.
+     *
+     * @return array The mapped Propel type.
+     */
+    abstract protected function getTypeMapping();
 
     /**
      * Give a best guess at the native type.
@@ -223,15 +198,10 @@ abstract class BaseSchemaParser implements SchemaParser
     protected function getNewVendorInfoObject(array $params)
     {
         $type = $this->getPlatform()->getDatabaseType();
-        $vi = new VendorInfo($type);
+        $vi   = new VendorInfo($type);
         $vi->setParameters($params);
 
         return $vi;
-    }
-
-    public function setPlatform($platform)
-    {
-        $this->platform = $platform;
     }
 
     public function getPlatform()
@@ -241,5 +211,30 @@ abstract class BaseSchemaParser implements SchemaParser
         }
 
         return $this->platform;
+    }
+
+    public function setPlatform($platform)
+    {
+        $this->platform = $platform;
+    }
+
+    /**
+     * Gets the GeneratorConfig option.
+     *
+     * @return GeneratorConfig
+     */
+    public function getGeneratorConfig()
+    {
+        return $this->generatorConfig;
+    }
+
+    /**
+     * Sets the GeneratorConfig to use in the parsing.
+     *
+     * @param GeneratorConfigInterface $config
+     */
+    public function setGeneratorConfig(GeneratorConfigInterface $config)
+    {
+        $this->generatorConfig = $config;
     }
 }

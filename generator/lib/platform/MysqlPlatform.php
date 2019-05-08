@@ -30,26 +30,6 @@ class MysqlPlatform extends DefaultPlatform
     protected $tableEngineKeyword = 'ENGINE'; // overwritten in build.properties
     protected $defaultTableEngine = 'MyISAM'; // overwritten in build.properties
 
-    /**
-     * Initializes db specific domain mapping.
-     */
-    protected function initialize()
-    {
-        parent::initialize();
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::BOOLEAN, "TINYINT", 1));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::NUMERIC, "DECIMAL"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::LONGVARCHAR, "TEXT"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::BINARY, "BLOB"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::VARBINARY, "MEDIUMBLOB"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::LONGVARBINARY, "LONGBLOB"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::BLOB, "LONGBLOB"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::CLOB, "LONGTEXT"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::TIMESTAMP, "DATETIME"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::OBJECT, "TEXT"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::PHP_ARRAY, "TEXT"));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::ENUM, "TINYINT"));
-    }
-
     public function setGeneratorConfig(GeneratorConfigInterface $generatorConfig)
     {
         if ($defaultTableEngine = $generatorConfig->getBuildProperty('mysqlTableType')) {
@@ -58,46 +38,6 @@ class MysqlPlatform extends DefaultPlatform
         if ($tableEngineKeyword = $generatorConfig->getBuildProperty('mysqlTableEngineKeyword')) {
             $this->tableEngineKeyword = $tableEngineKeyword;
         }
-    }
-
-    /**
-     * Setter for the tableEngineKeyword property
-     *
-     * @param string $tableEngineKeyword
-     */
-    public function setTableEngineKeyword($tableEngineKeyword)
-    {
-        $this->tableEngineKeyword = $tableEngineKeyword;
-    }
-
-    /**
-     * Getter for the tableEngineKeyword property
-     *
-     * @return string
-     */
-    public function getTableEngineKeyword()
-    {
-        return $this->tableEngineKeyword;
-    }
-
-    /**
-     * Setter for the defaultTableEngine property
-     *
-     * @param string $defaultTableEngine
-     */
-    public function setDefaultTableEngine($defaultTableEngine)
-    {
-        $this->defaultTableEngine = $defaultTableEngine;
-    }
-
-    /**
-     * Getter for the defaultTableEngine property
-     *
-     * @return string
-     */
-    public function getDefaultTableEngine()
-    {
-        return $this->defaultTableEngine;
     }
 
     public function getAutoIncrement()
@@ -115,18 +55,24 @@ class MysqlPlatform extends DefaultPlatform
         return strtolower($this->getDefaultTableEngine()) == 'innodb';
     }
 
-    public function supportsForeignKeys(Table $table)
+    /**
+     * Getter for the defaultTableEngine property
+     *
+     * @return string
+     */
+    public function getDefaultTableEngine()
     {
-        $vendorSpecific = $table->getVendorInfoForType('mysql');
-        if ($vendorSpecific->hasParameter('Type')) {
-            $mysqlTableType = $vendorSpecific->getParameter('Type');
-        } elseif ($vendorSpecific->hasParameter('Engine')) {
-            $mysqlTableType = $vendorSpecific->getParameter('Engine');
-        } else {
-            $mysqlTableType = $this->getDefaultTableEngine();
-        }
+        return $this->defaultTableEngine;
+    }
 
-        return strtolower($mysqlTableType) == 'innodb';
+    /**
+     * Setter for the defaultTableEngine property
+     *
+     * @param string $defaultTableEngine
+     */
+    public function setDefaultTableEngine($defaultTableEngine)
+    {
+        $this->defaultTableEngine = $defaultTableEngine;
     }
 
     public function getAddTablesDDL(Database $database)
@@ -151,44 +97,41 @@ SET FOREIGN_KEY_CHECKS = 0;
 ";
     }
 
-    public function getEndDDL()
+    public function getCommentBlockDDL($comment)
+    {
+        $pattern = "
+-- ---------------------------------------------------------------------
+-- %s
+-- ---------------------------------------------------------------------
+";
+
+        return sprintf($pattern, $comment);
+    }
+
+    public function getDropTableDDL(Table $table)
     {
         return "
-# This restores the fkey checks, after having unset them earlier
-SET FOREIGN_KEY_CHECKS = 1;
+DROP TABLE IF EXISTS " . $this->quoteIdentifier($table->getName()) . ";
 ";
     }
 
     /**
-     * Returns the SQL for the primary key of a Table object
+     * MySQL documentation says that identifiers cannot contain '.'. Thus it
+     * should be safe to split the string by '.' and quote each part individually
+     * to allow for a <schema>.<table> or <table>.<column> syntax.
      *
-     * @return string
+     * @param string $text the identifier
+     *
+     * @return string the quoted identifier
      */
-    public function getPrimaryKeyDDL(Table $table)
+    public function quoteIdentifier($text)
     {
-        if ($table->hasPrimaryKey()) {
-
-            $keys = $table->getPrimaryKey();
-
-            //MySQL throws an 'Incorrect table definition; there can be only one auto column and it must be defined as a key'
-            //if the primary key consists of multiple columns and if the first is not the autoIncrement one. So
-            //this push the autoIncrement column to the first position if its not already.
-            $autoIncrement = $table->getAutoIncrementPrimaryKey();
-            if ($autoIncrement && $keys[0] != $autoIncrement) {
-                $idx = array_search($autoIncrement, $keys);
-                if ($idx !== false) {
-                    unset($keys[$idx]);
-                    array_unshift($keys, $autoIncrement);
-                }
-            }
-
-            return 'PRIMARY KEY (' . $this->getColumnListDDL($keys) . ')';
-        }
+        return $this->isIdentifierQuotingEnabled ? '`' . strtr($text, ['.' => '`.`']) . '`' : $text;
     }
 
     public function getAddTableDDL(Table $table)
     {
-        $lines = array();
+        $lines = [];
 
         foreach ($table->getColumns() as $column) {
             $lines[] = $this->getColumnDDL($column);
@@ -233,7 +176,7 @@ SET FOREIGN_KEY_CHECKS = 1;
         }
 
         $tableOptions = $tableOptions ? ' ' . implode(' ', $tableOptions) : '';
-        $sep = ",
+        $sep          = ",
     ";
 
         $pattern = "
@@ -252,64 +195,11 @@ CREATE TABLE %s
         );
     }
 
-    protected function getTableOptions(Table $table)
-    {
-        $dbVI = $table->getDatabase()->getVendorInfoForType('mysql');
-        $tableVI = $table->getVendorInfoForType('mysql');
-        $vi = $dbVI->getMergedVendorInfo($tableVI);
-        $tableOptions = array();
-        // List of supported table options
-        // see http://dev.mysql.com/doc/refman/5.5/en/create-table.html
-        $supportedOptions = array(
-            'AutoIncrement'   => 'AUTO_INCREMENT',
-            'AvgRowLength'    => 'AVG_ROW_LENGTH',
-            'Charset'         => 'CHARACTER SET',
-            'Checksum'        => 'CHECKSUM',
-            'Collate'         => 'COLLATE',
-            'Connection'      => 'CONNECTION',
-            'DataDirectory'   => 'DATA DIRECTORY',
-            'Delay_key_write' => 'DELAY_KEY_WRITE',
-            'DelayKeyWrite'   => 'DELAY_KEY_WRITE',
-            'IndexDirectory'  => 'INDEX DIRECTORY',
-            'InsertMethod'    => 'INSERT_METHOD',
-            'KeyBlockSize'    => 'KEY_BLOCK_SIZE',
-            'MaxRows'         => 'MAX_ROWS',
-            'MinRows'         => 'MIN_ROWS',
-            'Pack_Keys'       => 'PACK_KEYS',
-            'PackKeys'        => 'PACK_KEYS',
-            'RowFormat'       => 'ROW_FORMAT',
-            'Union'           => 'UNION',
-        );
-        foreach ($supportedOptions as $name => $sqlName) {
-            $parameterValue = null;
-
-            if ($vi->hasParameter($name)) {
-                $parameterValue = $vi->getParameter($name);
-            } elseif ($vi->hasParameter($sqlName)) {
-                $parameterValue = $vi->getParameter($sqlName);
-            }
-
-            if (!is_null($parameterValue)) {
-                $parameterValue = is_numeric($parameterValue) ? $parameterValue : $this->quote($parameterValue);
-                $tableOptions[] = sprintf('%s=%s', $sqlName, $parameterValue);
-            }
-        }
-
-        return $tableOptions;
-    }
-
-    public function getDropTableDDL(Table $table)
-    {
-        return "
-DROP TABLE IF EXISTS " . $this->quoteIdentifier($table->getName()) . ";
-";
-    }
-
     public function getColumnDDL(Column $col)
     {
-        $domain = $col->getDomain();
-        $sqlType = $domain->getSqlType();
-        $notNullString = $this->getNullString($col->isNotNull());
+        $domain         = $col->getDomain();
+        $sqlType        = $domain->getSqlType();
+        $notNullString  = $this->getNullString($col->isNotNull());
         $defaultSetting = $this->getColumnDefaultValueDDL($col);
 
         // Special handling of TIMESTAMP/DATETIME types ...
@@ -330,7 +220,7 @@ DROP TABLE IF EXISTS " . $this->quoteIdentifier($table->getName()) . ";
             }
         }
 
-        $ddl = array($this->quoteIdentifier($col->getName()));
+        $ddl = [$this->quoteIdentifier($col->getName())];
         if ($this->hasSize($sqlType) && $col->isDefaultSqlType($this)) {
             $ddl[] = $sqlType . $domain->printSize();
         } else {
@@ -376,6 +266,46 @@ DROP TABLE IF EXISTS " . $this->quoteIdentifier($table->getName()) . ";
         return implode(' ', $ddl);
     }
 
+    public function hasSize($sqlType)
+    {
+        return !("MEDIUMTEXT" == $sqlType || "LONGTEXT" == $sqlType || "BLOB" == $sqlType || "MEDIUMBLOB" == $sqlType || "LONGBLOB" == $sqlType);
+    }
+
+    /**
+     * Returns the SQL for the primary key of a Table object
+     *
+     * @return string
+     */
+    public function getPrimaryKeyDDL(Table $table)
+    {
+        if ($table->hasPrimaryKey()) {
+
+            $keys = $table->getPrimaryKey();
+
+            //MySQL throws an 'Incorrect table definition; there can be only one auto column and it must be defined as a key'
+            //if the primary key consists of multiple columns and if the first is not the autoIncrement one. So
+            //this push the autoIncrement column to the first position if its not already.
+            $autoIncrement = $table->getAutoIncrementPrimaryKey();
+            if ($autoIncrement && $keys[0] != $autoIncrement) {
+                $idx = array_search($autoIncrement, $keys);
+                if ($idx !== false) {
+                    unset($keys[$idx]);
+                    array_unshift($keys, $autoIncrement);
+                }
+            }
+
+            return 'PRIMARY KEY (' . $this->getColumnListDDL($keys) . ')';
+        }
+    }
+
+    public function getUniqueDDL(Unique $unique)
+    {
+        return sprintf('UNIQUE INDEX %s (%s)',
+            $this->quoteIdentifier($unique->getName()),
+            $this->getIndexColumnListDDL($unique)
+        );
+    }
+
     /**
      * Creates a comma-separated list of column names for the index.
      * For MySQL unique indexes there is the option of specifying size, so we cannot simply use
@@ -387,12 +317,141 @@ DROP TABLE IF EXISTS " . $this->quoteIdentifier($table->getName()) . ";
      */
     protected function getIndexColumnListDDL(Index $index)
     {
-        $list = array();
+        $list = [];
         foreach ($index->getColumns() as $col) {
             $list[] = $this->quoteIdentifier($col) . ($index->hasColumnSize($col) ? '(' . $index->getColumnSize($col) . ')' : '');
         }
 
         return implode(', ', $list);
+    }
+
+    /**
+     * Builds the DDL SQL for an Index object.
+     *
+     * @return string
+     */
+    public function getIndexDDL(Index $index)
+    {
+        return sprintf('%sINDEX %s (%s)',
+            $this->getIndexType($index),
+            $this->quoteIdentifier($index->getName()),
+            $this->getIndexColumnListDDL($index)
+        );
+    }
+
+    protected function getIndexType(Index $index)
+    {
+        $type       = '';
+        $vendorInfo = $index->getVendorInfoForType($this->getDatabaseType());
+        if ($vendorInfo && $vendorInfo->getParameter('Index_type')) {
+            $type = $vendorInfo->getParameter('Index_type') . ' ';
+        } elseif ($index->getIsUnique()) {
+            $type = 'UNIQUE ';
+        }
+
+        return $type;
+    }
+
+    public function supportsForeignKeys(Table $table)
+    {
+        $vendorSpecific = $table->getVendorInfoForType('mysql');
+        if ($vendorSpecific->hasParameter('Type')) {
+            $mysqlTableType = $vendorSpecific->getParameter('Type');
+        } elseif ($vendorSpecific->hasParameter('Engine')) {
+            $mysqlTableType = $vendorSpecific->getParameter('Engine');
+        } else {
+            $mysqlTableType = $this->getDefaultTableEngine();
+        }
+
+        return strtolower($mysqlTableType) == 'innodb';
+    }
+
+    /**
+     * Builds the DDL SQL for a ForeignKey object.
+     *
+     * @return string
+     */
+    public function getForeignKeyDDL(ForeignKey $fk)
+    {
+        if ($this->supportsForeignKeys($fk->getTable())) {
+            return parent::getForeignKeyDDL($fk);
+        }
+
+        return '';
+    }
+
+    protected function getTableOptions(Table $table)
+    {
+        $dbVI         = $table->getDatabase()->getVendorInfoForType('mysql');
+        $tableVI      = $table->getVendorInfoForType('mysql');
+        $vi           = $dbVI->getMergedVendorInfo($tableVI);
+        $tableOptions = [];
+        // List of supported table options
+        // see http://dev.mysql.com/doc/refman/5.5/en/create-table.html
+        $supportedOptions = [
+            'AutoIncrement'   => 'AUTO_INCREMENT',
+            'AvgRowLength'    => 'AVG_ROW_LENGTH',
+            'Charset'         => 'CHARACTER SET',
+            'Checksum'        => 'CHECKSUM',
+            'Collate'         => 'COLLATE',
+            'Connection'      => 'CONNECTION',
+            'DataDirectory'   => 'DATA DIRECTORY',
+            'Delay_key_write' => 'DELAY_KEY_WRITE',
+            'DelayKeyWrite'   => 'DELAY_KEY_WRITE',
+            'IndexDirectory'  => 'INDEX DIRECTORY',
+            'InsertMethod'    => 'INSERT_METHOD',
+            'KeyBlockSize'    => 'KEY_BLOCK_SIZE',
+            'MaxRows'         => 'MAX_ROWS',
+            'MinRows'         => 'MIN_ROWS',
+            'Pack_Keys'       => 'PACK_KEYS',
+            'PackKeys'        => 'PACK_KEYS',
+            'RowFormat'       => 'ROW_FORMAT',
+            'Union'           => 'UNION',
+        ];
+        foreach ($supportedOptions as $name => $sqlName) {
+            $parameterValue = null;
+
+            if ($vi->hasParameter($name)) {
+                $parameterValue = $vi->getParameter($name);
+            } elseif ($vi->hasParameter($sqlName)) {
+                $parameterValue = $vi->getParameter($sqlName);
+            }
+
+            if (!is_null($parameterValue)) {
+                $parameterValue = is_numeric($parameterValue) ? $parameterValue : $this->quote($parameterValue);
+                $tableOptions[] = sprintf('%s=%s', $sqlName, $parameterValue);
+            }
+        }
+
+        return $tableOptions;
+    }
+
+    /**
+     * Getter for the tableEngineKeyword property
+     *
+     * @return string
+     */
+    public function getTableEngineKeyword()
+    {
+        return $this->tableEngineKeyword;
+    }
+
+    /**
+     * Setter for the tableEngineKeyword property
+     *
+     * @param string $tableEngineKeyword
+     */
+    public function setTableEngineKeyword($tableEngineKeyword)
+    {
+        $this->tableEngineKeyword = $tableEngineKeyword;
+    }
+
+    public function getEndDDL()
+    {
+        return "
+# This restores the fkey checks, after having unset them earlier
+SET FOREIGN_KEY_CHECKS = 1;
+";
     }
 
     /**
@@ -453,59 +512,10 @@ DROP INDEX %s ON %s;
         );
     }
 
-    /**
-     * Builds the DDL SQL for an Index object.
-     *
-     * @return string
-     */
-    public function getIndexDDL(Index $index)
-    {
-        return sprintf('%sINDEX %s (%s)',
-            $this->getIndexType($index),
-            $this->quoteIdentifier($index->getName()),
-            $this->getIndexColumnListDDL($index)
-        );
-    }
-
-    protected function getIndexType(Index $index)
-    {
-        $type = '';
-        $vendorInfo = $index->getVendorInfoForType($this->getDatabaseType());
-        if ($vendorInfo && $vendorInfo->getParameter('Index_type')) {
-            $type = $vendorInfo->getParameter('Index_type') . ' ';
-        } elseif ($index->getIsUnique()) {
-            $type = 'UNIQUE ';
-        }
-
-        return $type;
-    }
-
-    public function getUniqueDDL(Unique $unique)
-    {
-        return sprintf('UNIQUE INDEX %s (%s)',
-            $this->quoteIdentifier($unique->getName()),
-            $this->getIndexColumnListDDL($unique)
-        );
-    }
-
     public function getAddForeignKeyDDL(ForeignKey $fk)
     {
         if ($this->supportsForeignKeys($fk->getTable())) {
             return parent::getAddForeignKeyDDL($fk);
-        }
-
-        return '';
-    }
-
-    /**
-     * Builds the DDL SQL for a ForeignKey object.
-     *
-     * @return string
-     */
-    public function getForeignKeyDDL(ForeignKey $fk)
-    {
-        if ($this->supportsForeignKeys($fk->getTable())) {
-            return parent::getForeignKeyDDL($fk);
         }
 
         return '';
@@ -524,17 +534,6 @@ ALTER TABLE %s DROP FOREIGN KEY %s;
             $this->quoteIdentifier($fk->getTable()->getName()),
             $this->quoteIdentifier($fk->getName())
         );
-    }
-
-    public function getCommentBlockDDL($comment)
-    {
-        $pattern = "
--- ---------------------------------------------------------------------
--- %s
--- ---------------------------------------------------------------------
-";
-
-        return sprintf($pattern, $comment);
     }
 
     /**
@@ -613,16 +612,6 @@ ALTER TABLE %s DROP %s;
     }
 
     /**
-     * Builds the DDL SQL to modify a column
-     *
-     * @return string
-     */
-    public function getModifyColumnDDL(PropelColumnDiff $columnDiff)
-    {
-        return $this->getChangeColumnDDL($columnDiff->getFromColumn(), $columnDiff->getToColumn());
-    }
-
-    /**
      * Builds the DDL SQL to change a column
      *
      * @return string
@@ -655,6 +644,46 @@ ALTER TABLE %s CHANGE %s %s;
         return $ret;
     }
 
+    /**
+     * Builds the DDL SQL to modify a column
+     *
+     * @return string
+     */
+    public function getModifyColumnDDL(PropelColumnDiff $columnDiff)
+    {
+        return $this->getChangeColumnDDL($columnDiff->getFromColumn(), $columnDiff->getToColumn());
+    }
+
+    /**
+     * Builds the DDL SQL to add a list of columns
+     *
+     * @return string
+     */
+    public function getAddColumnsDDL($columns)
+    {
+        $lines     = [];
+        $tableName = null;
+        foreach ($columns as $column) {
+            if (null === $tableName) {
+                $tableName = $column->getTable()->getName();
+            }
+            $lines[] = $this->getAddColumnDDLBits($column);
+        }
+
+        $pattern = "
+ALTER TABLE %s
+    %s;
+";
+
+        $sep = ",
+    ";
+
+        return sprintf($pattern,
+            $this->quoteIdentifier($tableName),
+            implode($sep, $lines)
+        );
+    }
+
     public function getAddColumnDDLBits(Column $column)
     {
         $pattern = "ADD %s %s";
@@ -681,46 +710,11 @@ ALTER TABLE %s CHANGE %s %s;
     }
 
     /**
-     * Builds the DDL SQL to add a list of columns
-     *
-     * @return string
-     */
-    public function getAddColumnsDDL($columns)
-    {
-        $lines = array();
-        $tableName = null;
-        foreach ($columns as $column) {
-            if (null === $tableName) {
-                $tableName = $column->getTable()->getName();
-            }
-            $lines[] = $this->getAddColumnDDLBits($column);
-        }
-
-        $pattern = "
-ALTER TABLE %s
-    %s;
-";
-
-        $sep = ",
-    ";
-
-        return sprintf($pattern,
-            $this->quoteIdentifier($tableName),
-            implode($sep, $lines)
-        );
-    }
-
-    /**
      * @see        Platform::supportsSchemas()
      */
     public function supportsSchemas()
     {
         return true;
-    }
-
-    public function hasSize($sqlType)
-    {
-        return !("MEDIUMTEXT" == $sqlType || "LONGTEXT" == $sqlType || "BLOB" == $sqlType || "MEDIUMBLOB" == $sqlType || "LONGBLOB" == $sqlType);
     }
 
     /**
@@ -738,20 +732,6 @@ ALTER TABLE %s
         } else {
             return addslashes($text);
         }
-    }
-
-    /**
-     * MySQL documentation says that identifiers cannot contain '.'. Thus it
-     * should be safe to split the string by '.' and quote each part individually
-     * to allow for a <schema>.<table> or <table>.<column> syntax.
-     *
-     * @param string $text the identifier
-     *
-     * @return string the quoted identifier
-     */
-    public function quoteIdentifier($text)
-    {
-        return $this->isIdentifierQuotingEnabled ? '`' . strtr($text, array('.' => '`.`')) . '`' : $text;
     }
 
     public function getTimestampFormatter()
@@ -778,11 +758,31 @@ ALTER TABLE %s
 
     public function getDefaultFKOnDeleteBehavior()
     {
-      return ForeignKey::RESTRICT;
+        return ForeignKey::RESTRICT;
     }
 
     public function getDefaultFKOnUpdateBehavior()
     {
-      return ForeignKey::RESTRICT;
+        return ForeignKey::RESTRICT;
+    }
+
+    /**
+     * Initializes db specific domain mapping.
+     */
+    protected function initialize()
+    {
+        parent::initialize();
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::BOOLEAN, "TINYINT", 1));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::NUMERIC, "DECIMAL"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::LONGVARCHAR, "TEXT"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::BINARY, "BLOB"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::VARBINARY, "MEDIUMBLOB"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::LONGVARBINARY, "LONGBLOB"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::BLOB, "LONGBLOB"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::CLOB, "LONGTEXT"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::TIMESTAMP, "DATETIME"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::OBJECT, "TEXT"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::PHP_ARRAY, "TEXT"));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::ENUM, "TINYINT"));
     }
 }

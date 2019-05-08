@@ -21,15 +21,14 @@ require_once 'phing/Phing.php';
 class GeneratorConfig implements GeneratorConfigInterface
 {
 
+    protected $buildConnections       = null;
+    protected $defaultBuildConnection = null;
     /**
      * The build properties.
      *
      * @var        array
      */
-    private $buildProperties = array();
-
-    protected $buildConnections = null;
-    protected $defaultBuildConnection = null;
+    private $buildProperties = [];
 
     /**
      * Construct a new GeneratorConfig.
@@ -63,20 +62,112 @@ class GeneratorConfig implements GeneratorConfigInterface
      */
     public function setBuildProperties($props)
     {
-        $this->buildProperties = array();
+        $this->buildProperties = [];
 
-        $renamedPropelProps = array();
+        $renamedPropelProps = [];
         foreach ($props as $key => $propValue) {
             if (strpos($key, "propel.") === 0) {
                 $newKey = substr($key, strlen("propel."));
-                $j = strpos($newKey, '.');
+                $j      = strpos($newKey, '.');
                 while ($j !== false) {
                     $newKey = substr($newKey, 0, $j) . ucfirst(substr($newKey, $j + 1));
-                    $j = strpos($newKey, '.');
+                    $j      = strpos($newKey, '.');
                 }
                 $this->setBuildProperty($newKey, $propValue);
             }
         }
+    }
+
+    /**
+     * Sets a specific propel (renamed) property from the build.
+     *
+     * @param string $name
+     * @param mixed $value
+     */
+    public function setBuildProperty($name, $value)
+    {
+        $this->buildProperties[$name] = $value;
+    }
+
+    /**
+     * Creates and configures a new Platform class.
+     *
+     * @param PDO $con
+     *
+     * @return Platform
+     * @throws BuildException
+     */
+    public function getConfiguredPlatform(PDO $con = null, $database = null)
+    {
+        $buildConnection = $this->getBuildConnection($database);
+        //First try to load platform from the user provided build properties
+        if ($this->getBuildProperty('platformClass')) {
+            // propel.platform.class = platform.${propel.database}Platform by default
+            $clazz = $this->getClassname('platformClass');
+        } elseif (null !== $buildConnection['adapter']) {
+            $clazz = Phing::import('platform.' . ucfirst($buildConnection['adapter']) . 'Platform');
+        } else {
+            return null;
+        }
+        $platform = new $clazz();
+
+        if (!$platform instanceof PropelPlatformInterface) {
+            throw new BuildException("Specified platform class ($clazz) does not implement teh PropelPlatformInterface interface.");
+        }
+
+        if ($this->getBuildProperty('disableIdentifierQuoting')) {
+            $platform->setIdentifierQuoting(false);
+        } else {
+            $platform->setIdentifierQuoting(true);
+        }
+        $platform->setConnection($con);
+        $platform->setGeneratorConfig($this);
+
+        return $platform;
+    }
+
+    public function getBuildConnection($databaseName = null)
+    {
+        $connections = $this->getBuildConnections();
+        if (null === $databaseName) {
+            $databaseName = $this->defaultBuildConnection;
+        }
+        if (isset($connections[$databaseName])) {
+            return $connections[$databaseName];
+        } else {
+            // fallback to the single connection from build.properties
+            return [
+                'adapter'  => $this->getBuildProperty('databaseAdapter'),
+                'dsn'      => $this->getBuildProperty('databaseUrl'),
+                'user'     => $this->getBuildProperty('databaseUser'),
+                'password' => $this->getBuildProperty('databasePassword'),
+            ];
+        }
+    }
+
+    public function getBuildConnections()
+    {
+        if (null === $this->buildConnections) {
+            $buildTimeConfigPath = $this->getBuildProperty('buildtimeConfFile') ? $this->getBuildProperty('projectDir') . DIRECTORY_SEPARATOR . $this->getBuildProperty('buildtimeConfFile') : null;
+            if ($buildTimeConfigString = $this->getBuildProperty('buildtimeConf')) {
+                // configuration passed as propel.buildtimeConf string
+                // probably using the command line, which doesn't accept whitespace
+                // therefore base64 encoded
+                $this->parseBuildConnections(base64_decode($buildTimeConfigString));
+            } elseif (file_exists($buildTimeConfigPath)) {
+                // configuration stored in a buildtime-conf.xml file
+                $this->parseBuildConnections(file_get_contents($buildTimeConfigPath));
+            } else {
+                $this->buildConnections = [];
+            }
+        }
+
+        return $this->buildConnections;
+    }
+
+    public function setBuildConnections($buildConnections)
+    {
+        $this->buildConnections = $buildConnections;
     }
 
     /**
@@ -91,15 +182,20 @@ class GeneratorConfig implements GeneratorConfigInterface
         return isset($this->buildProperties[$name]) ? $this->buildProperties[$name] : null;
     }
 
-    /**
-     * Sets a specific propel (renamed) property from the build.
-     *
-     * @param string $name
-     * @param mixed  $value
-     */
-    public function setBuildProperty($name, $value)
+    protected function parseBuildConnections($xmlString)
     {
-        $this->buildProperties[$name] = $value;
+        $conf                         = simplexml_load_string($xmlString);
+        $this->defaultBuildConnection = (string)$conf->propel->datasources['default'];
+        $buildConnections             = [];
+        foreach ($conf->propel->datasources->datasource as $datasource) {
+            $buildConnections[(string)$datasource['id']] = [
+                'adapter'  => (string)$datasource->adapter,
+                'dsn'      => (string)$datasource->connection->dsn,
+                'user'     => (string)$datasource->connection->user,
+                'password' => (string)$datasource->connection->password,
+            ];
+        }
+        $this->buildConnections = $buildConnections;
     }
 
     /**
@@ -140,57 +236,6 @@ class GeneratorConfig implements GeneratorConfigInterface
     }
 
     /**
-     * Resolves and returns the builder class name.
-     *
-     * @param string $type
-     *
-     * @return string The class name.
-     */
-    public function getBuilderClassname($type)
-    {
-        $propname = 'builder' . ucfirst(strtolower($type)) . 'Class';
-
-        return $this->getClassname($propname);
-    }
-
-    /**
-     * Creates and configures a new Platform class.
-     *
-     * @param PDO $con
-     *
-     * @return Platform
-     * @throws BuildException
-     */
-    public function getConfiguredPlatform(PDO $con = null, $database = null)
-    {
-        $buildConnection = $this->getBuildConnection($database);
-        //First try to load platform from the user provided build properties
-        if ($this->getBuildProperty('platformClass')) {
-            // propel.platform.class = platform.${propel.database}Platform by default
-            $clazz = $this->getClassname('platformClass');
-        } elseif (null !== $buildConnection['adapter']) {
-            $clazz = Phing::import('platform.' . ucfirst($buildConnection['adapter']) . 'Platform');
-        } else {
-            return null;
-        }
-        $platform = new $clazz();
-
-        if (!$platform instanceof PropelPlatformInterface) {
-            throw new BuildException("Specified platform class ($clazz) does not implement teh PropelPlatformInterface interface.");
-        }
-
-        if ($this->getBuildProperty('disableIdentifierQuoting')) {
-            $platform->setIdentifierQuoting(false);
-        } else {
-            $platform->setIdentifierQuoting(true);
-        }
-        $platform->setConnection($con);
-        $platform->setGeneratorConfig($this);
-
-        return $platform;
-    }
-
-    /**
      * Creates and configures a new SchemaParser class for specified platform.
      *
      * @param PDO $con
@@ -200,7 +245,7 @@ class GeneratorConfig implements GeneratorConfigInterface
      */
     public function getConfiguredSchemaParser(PDO $con = null)
     {
-        $clazz = $this->getClassname("reverseParserClass");
+        $clazz  = $this->getClassname("reverseParserClass");
         $parser = new $clazz();
         if (!$parser instanceof SchemaParser) {
             throw new BuildException("Specified platform class ($clazz) does implement SchemaParser interface.", $this->getLocation());
@@ -215,18 +260,32 @@ class GeneratorConfig implements GeneratorConfigInterface
     /**
      * Gets a configured data model builder class for specified table and based on type.
      *
-     * @param Table  $table
-     * @param string $type  The type of builder ('ddl', 'sql', etc.)
+     * @param Table $table
+     * @param string $type The type of builder ('ddl', 'sql', etc.)
      *
      * @return DataModelBuilder
      */
     public function getConfiguredBuilder(Table $table, $type, $cache = true)
     {
         $classname = $this->getBuilderClassname($type);
-        $builder = new $classname($table);
+        $builder   = new $classname($table);
         $builder->setGeneratorConfig($this);
 
         return $builder;
+    }
+
+    /**
+     * Resolves and returns the builder class name.
+     *
+     * @param string $type
+     *
+     * @return string The class name.
+     */
+    public function getBuilderClassname($type)
+    {
+        $propname = 'builder' . ucfirst(strtolower($type)) . 'Class';
+
+        return $this->getClassname($propname);
     }
 
     /**
@@ -236,7 +295,7 @@ class GeneratorConfig implements GeneratorConfigInterface
      */
     public function getConfiguredPluralizer()
     {
-        $classname = $this->getBuilderClassname('pluralizer');
+        $classname  = $this->getBuilderClassname('pluralizer');
         $pluralizer = new $classname();
 
         return $pluralizer;
@@ -262,70 +321,10 @@ class GeneratorConfig implements GeneratorConfigInterface
         return $ret;
     }
 
-    public function setBuildConnections($buildConnections)
-    {
-        $this->buildConnections = $buildConnections;
-    }
-
-    public function getBuildConnections()
-    {
-        if (null === $this->buildConnections) {
-            $buildTimeConfigPath = $this->getBuildProperty('buildtimeConfFile') ? $this->getBuildProperty('projectDir') . DIRECTORY_SEPARATOR . $this->getBuildProperty('buildtimeConfFile') : null;
-            if ($buildTimeConfigString = $this->getBuildProperty('buildtimeConf')) {
-                // configuration passed as propel.buildtimeConf string
-                // probably using the command line, which doesn't accept whitespace
-                // therefore base64 encoded
-                $this->parseBuildConnections(base64_decode($buildTimeConfigString));
-            } elseif (file_exists($buildTimeConfigPath)) {
-                // configuration stored in a buildtime-conf.xml file
-                $this->parseBuildConnections(file_get_contents($buildTimeConfigPath));
-            } else {
-                $this->buildConnections = array();
-            }
-        }
-
-        return $this->buildConnections;
-    }
-
-    protected function parseBuildConnections($xmlString)
-    {
-        $conf = simplexml_load_string($xmlString);
-        $this->defaultBuildConnection = (string) $conf->propel->datasources['default'];
-        $buildConnections = array();
-        foreach ($conf->propel->datasources->datasource as $datasource) {
-            $buildConnections[(string) $datasource['id']] = array(
-                'adapter'  => (string) $datasource->adapter,
-                'dsn'      => (string) $datasource->connection->dsn,
-                'user'     => (string) $datasource->connection->user,
-                'password' => (string) $datasource->connection->password,
-            );
-        }
-        $this->buildConnections = $buildConnections;
-    }
-
-    public function getBuildConnection($databaseName = null)
-    {
-        $connections = $this->getBuildConnections();
-        if (null === $databaseName) {
-            $databaseName = $this->defaultBuildConnection;
-        }
-        if (isset($connections[$databaseName])) {
-            return $connections[$databaseName];
-        } else {
-            // fallback to the single connection from build.properties
-            return array(
-                'adapter'  => $this->getBuildProperty('databaseAdapter'),
-                'dsn'      => $this->getBuildProperty('databaseUrl'),
-                'user'     => $this->getBuildProperty('databaseUser'),
-                'password' => $this->getBuildProperty('databasePassword'),
-            );
-        }
-    }
-
     public function getBuildPDO($database)
     {
         $buildConnection = $this->getBuildConnection($database);
-        $dsn = str_replace("@DB@", $database, $buildConnection['dsn']);
+        $dsn             = str_replace("@DB@", $database, $buildConnection['dsn']);
 
         // Set user + password to null if they are empty strings or missing
         $username = isset($buildConnection['user']) && $buildConnection['user'] ? $buildConnection['user'] : null;

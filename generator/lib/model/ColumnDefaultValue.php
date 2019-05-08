@@ -19,7 +19,7 @@ class ColumnDefaultValue
 {
 
     const TYPE_VALUE = "value";
-    const TYPE_EXPR = "expr";
+    const TYPE_EXPR  = "expr";
 
     /**
      * @var        string The default value, as specified in the schema.
@@ -35,7 +35,7 @@ class ColumnDefaultValue
      * Creates a new DefaultValue object.
      *
      * @param string $value The default value, as specified in the schema.
-     * @param string $type  The type of default value (DefaultValue::TYPE_VALUE or DefaultValue::TYPE_EXPR)
+     * @param string $type The type of default value (DefaultValue::TYPE_VALUE or DefaultValue::TYPE_EXPR)
      */
     public function __construct($value, $type = null)
     {
@@ -46,22 +46,6 @@ class ColumnDefaultValue
     }
 
     /**
-     * @return string The type of default value (DefaultValue::TYPE_VALUE or DefaultValue::TYPE_EXPR)
-     */
-    public function getType()
-    {
-        return $this->type;
-    }
-
-    /**
-     * @param string $type The type of default value (DefaultValue::TYPE_VALUE or DefaultValue::TYPE_EXPR)
-     */
-    public function setType($type)
-    {
-        $this->type = $type;
-    }
-
-    /**
      * Convenience method to indicate whether the value in this object is an expression (as opposed to simple value).
      *
      * @return boolean Whether value this object holds is an expression.
@@ -69,22 +53,6 @@ class ColumnDefaultValue
     public function isExpression()
     {
         return ($this->type == self::TYPE_EXPR);
-    }
-
-    /**
-     * @return string The value, as specified in the schema.
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * @param string $value The value, as specified in the schema.
-     */
-    public function setValue($value)
-    {
-        $this->value = $value;
     }
 
     /**
@@ -104,11 +72,43 @@ class ColumnDefaultValue
             return true;
         }
         // special case for current timestamp
-        $equivalents = array('CURRENT_TIMESTAMP', 'NOW()');
+        $equivalents = ['CURRENT_TIMESTAMP', 'NOW()'];
         if (in_array(strtoupper($this->getValue()), $equivalents) && in_array(strtoupper($other->getValue()), $equivalents)) {
             return true;
         }
 
         return false; // Can't help, they are different
+    }
+
+    /**
+     * @return string The type of default value (DefaultValue::TYPE_VALUE or DefaultValue::TYPE_EXPR)
+     */
+    public function getType()
+    {
+        return $this->type;
+    }
+
+    /**
+     * @param string $type The type of default value (DefaultValue::TYPE_VALUE or DefaultValue::TYPE_EXPR)
+     */
+    public function setType($type)
+    {
+        $this->type = $type;
+    }
+
+    /**
+     * @return string The value, as specified in the schema.
+     */
+    public function getValue()
+    {
+        return $this->value;
+    }
+
+    /**
+     * @param string $value The value, as specified in the schema.
+     */
+    public function setValue($value)
+    {
+        $this->value = $value;
     }
 }

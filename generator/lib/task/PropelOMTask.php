@@ -29,16 +29,6 @@ class PropelOMTask extends AbstractPropelDataModelTask
     private $targetPlatform;
 
     /**
-     * Sets the platform (php4, php5, etc.) for which the om is being built.
-     *
-     * @param string $v
-     */
-    public function setTargetPlatform($v)
-    {
-        $this->targetPlatform = $v;
-    }
-
-    /**
      * Gets the platform (php4, php5, etc.) for which the om is being built.
      *
      * @return string
@@ -49,67 +39,16 @@ class PropelOMTask extends AbstractPropelDataModelTask
     }
 
     /**
-     * Utility method to create directory for package if it doesn't already exist.
+     * Sets the platform (php4, php5, etc.) for which the om is being built.
      *
-     * @param string $path The [relative] package path.
-     *
-     * @throws BuildException - if there is an error creating directories
+     * @param string $v
      */
-    protected function ensureDirExists($path)
+    public function setTargetPlatform($v)
     {
-        $f = new PhingFile($this->getOutputDirectory(), $path);
-        if (!$f->exists()) {
-            if (!$f->mkdirs()) {
-                throw new BuildException("Error creating directories: " . $f->getPath());
-            }
-        }
+        $this->targetPlatform = $v;
     }
 
-    /**
-     * Uses a builder class to create the output class.
-     * This method assumes that the DataModelBuilder class has been initialized with the build properties.
-     *
-     * @param OMBuilder $builder
-     * @param boolean   $overwrite Whether to overwrite existing files with te new ones (default is YES).
-     *
-     * @todo       -cPropelOMTask Consider refactoring build() method into AbstractPropelDataModelTask (would need to be more generic).
-     * @return int
-     */
-    protected function build(OMBuilder $builder, $overwrite = true)
-    {
-        $path = $builder->getClassFilePath();
-        $this->ensureDirExists(dirname($path));
-
-        $_f = new PhingFile($this->getOutputDirectory(), $path);
-
-        // skip files already created once
-        if ($_f->exists() && !$overwrite) {
-            $this->log("\t-> (exists) " . $builder->getClassFilePath(), Project::MSG_VERBOSE);
-
-            return 0;
-        }
-
-        $script = $builder->build();
-        foreach ($builder->getWarnings() as $warning) {
-            $this->log($warning, Project::MSG_WARN);
-        }
-
-        // skip unchanged files
-        if ($_f->exists() && $script == $_f->contents()) {
-            $this->log("\t-> (unchanged) " . $builder->getClassFilePath(), Project::MSG_VERBOSE);
-
-            return 0;
-        }
-
-        // write / overwrite new / changed files
-        $action = $_f->exists() ? 'Updating' : 'Creating';
-        $this->log(sprintf("\t-> %s %s (table: %s, builder: %s)", $action, $builder->getClassFilePath(), $builder->getTable()->getName(), get_class($builder)));
-        file_put_contents($_f->getAbsolutePath(), $script);
-
-        return 1;
-    }
-
-    /**
+/**
      * Main method builds all the targets for a typical propel project.
      */
     public function main()
@@ -118,7 +57,7 @@ class PropelOMTask extends AbstractPropelDataModelTask
         $this->validate();
 
         $generatorConfig = $this->getGeneratorConfig();
-        $totalNbFiles = 0;
+        $totalNbFiles    = 0;
 
         $dataModels = $this->getDataModels();
         $this->log('Generating PHP files...');
@@ -147,8 +86,8 @@ class PropelOMTask extends AbstractPropelDataModelTask
                         // -----------------------------------------------------------------------------------------
 
                         // these files are always created / overwrite any existing files
-                        foreach (array('peer', 'object', 'tablemap', 'query') as $target) {
-                            $builder = $generatorConfig->getConfiguredBuilder($table, $target);
+                        foreach (['peer', 'object', 'tablemap', 'query'] as $target) {
+                            $builder        = $generatorConfig->getConfiguredBuilder($table, $target);
                             $nbWrittenFiles += $this->build($builder);
                         }
 
@@ -157,8 +96,8 @@ class PropelOMTask extends AbstractPropelDataModelTask
                         // -----------------------------------------------------------------------------------------
 
                         // these classes are only generated if they don't already exist
-                        foreach (array('peerstub', 'objectstub', 'querystub') as $target) {
-                            $builder = $generatorConfig->getConfiguredBuilder($table, $target);
+                        foreach (['peerstub', 'objectstub', 'querystub'] as $target) {
+                            $builder        = $generatorConfig->getConfiguredBuilder($table, $target);
                             $nbWrittenFiles += $this->build($builder, $overwrite = false);
                         }
 
@@ -170,7 +109,7 @@ class PropelOMTask extends AbstractPropelDataModelTask
                         if ($col = $table->getChildrenColumn()) {
                             if ($col->isEnumeratedClasses()) {
                                 foreach ($col->getChildren() as $child) {
-                                    foreach (array('queryinheritance') as $target) {
+                                    foreach (['queryinheritance'] as $target) {
                                         if (!$child->getAncestor()) {
                                             continue;
                                         }
@@ -178,7 +117,7 @@ class PropelOMTask extends AbstractPropelDataModelTask
                                         $builder->setChild($child);
                                         $nbWrittenFiles += $this->build($builder, $overwrite = true);
                                     }
-                                    foreach (array('objectmultiextend', 'queryinheritancestub') as $target) {
+                                    foreach (['objectmultiextend', 'queryinheritancestub'] as $target) {
                                         $builder = $generatorConfig->getConfiguredBuilder($table, $target);
                                         $builder->setChild($child);
                                         $nbWrittenFiles += $this->build($builder, $overwrite = false);
@@ -194,7 +133,7 @@ class PropelOMTask extends AbstractPropelDataModelTask
 
                         // Create [empty] interface if it does not already exist
                         if ($table->getInterface()) {
-                            $builder = $generatorConfig->getConfiguredBuilder($table, 'interface');
+                            $builder        = $generatorConfig->getConfiguredBuilder($table, 'interface');
                             $nbWrittenFiles += $this->build($builder, $overwrite = false);
                         }
 
@@ -205,20 +144,20 @@ class PropelOMTask extends AbstractPropelDataModelTask
                         if ($table->treeMode()) {
                             switch ($table->treeMode()) {
                                 case 'NestedSet':
-                                    foreach (array('nestedsetpeer', 'nestedset') as $target) {
-                                        $builder = $generatorConfig->getConfiguredBuilder($table, $target);
+                                    foreach (['nestedsetpeer', 'nestedset'] as $target) {
+                                        $builder        = $generatorConfig->getConfiguredBuilder($table, $target);
                                         $nbWrittenFiles += $this->build($builder);
                                     }
                                     break;
 
                                 case 'MaterializedPath':
-                                    foreach (array('nodepeer', 'node') as $target) {
-                                        $builder = $generatorConfig->getConfiguredBuilder($table, $target);
+                                    foreach (['nodepeer', 'node'] as $target) {
+                                        $builder        = $generatorConfig->getConfiguredBuilder($table, $target);
                                         $nbWrittenFiles += $this->build($builder);
                                     }
 
-                                    foreach (array('nodepeerstub', 'nodestub') as $target) {
-                                        $builder = $generatorConfig->getConfiguredBuilder($table, $target);
+                                    foreach (['nodepeerstub', 'nodestub'] as $target) {
+                                        $builder        = $generatorConfig->getConfiguredBuilder($table, $target);
                                         $nbWrittenFiles += $this->build($builder, $overwrite = false);
                                     }
                                     break;
@@ -256,6 +195,67 @@ class PropelOMTask extends AbstractPropelDataModelTask
             $this->log(sprintf("Object model generation complete - %d files written", $totalNbFiles));
         } else {
             $this->log("Object model generation complete - All files already up to date");
+        }
+    }
+
+    /**
+     * Uses a builder class to create the output class.
+     * This method assumes that the DataModelBuilder class has been initialized with the build properties.
+     *
+     * @param OMBuilder $builder
+     * @param boolean $overwrite Whether to overwrite existing files with te new ones (default is YES).
+     *
+     * @return int
+     * @todo       -cPropelOMTask Consider refactoring build() method into AbstractPropelDataModelTask (would need to be more generic).
+     */
+    protected function build(OMBuilder $builder, $overwrite = true)
+    {
+        $path = $builder->getClassFilePath();
+        $this->ensureDirExists(dirname($path));
+
+        $_f = new PhingFile($this->getOutputDirectory(), $path);
+
+        // skip files already created once
+        if ($_f->exists() && !$overwrite) {
+            $this->log("\t-> (exists) " . $builder->getClassFilePath(), Project::MSG_VERBOSE);
+
+            return 0;
+        }
+
+        $script = $builder->build();
+        foreach ($builder->getWarnings() as $warning) {
+            $this->log($warning, Project::MSG_WARN);
+        }
+
+        // skip unchanged files
+        if ($_f->exists() && $script == $_f->contents()) {
+            $this->log("\t-> (unchanged) " . $builder->getClassFilePath(), Project::MSG_VERBOSE);
+
+            return 0;
+        }
+
+        // write / overwrite new / changed files
+        $action = $_f->exists() ? 'Updating' : 'Creating';
+        $this->log(sprintf("\t-> %s %s (table: %s, builder: %s)", $action, $builder->getClassFilePath(), $builder->getTable()->getName(), get_class($builder)));
+        file_put_contents($_f->getAbsolutePath(), $script);
+
+        return 1;
+    }
+
+        /**
+     * Utility method to create directory for package if it doesn't already exist.
+     *
+     * @param string $path The [relative] package path.
+     *
+     * @throws BuildException - if there is an error creating directories
+     */
+    protected function ensureDirExists($path)
+    {
+        $f = new PhingFile($this->getOutputDirectory(), $path);
+        if (!$f->exists()) {
+            if (!$f->mkdirs()) {
+                throw new BuildException("Error creating directories: " . $f->getPath());
+            }
         }
     } // main()
 }

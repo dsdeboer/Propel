@@ -25,31 +25,14 @@ abstract class XMLElement
      *
      * @var array
      */
-    protected $attributes = array();
+    protected $attributes = [];
 
     /**
      * Any associated vendor-specific information objects.
      *
      * @var VendorInfo[]
      */
-    protected $vendorInfos = array();
-
-    /**
-     * Replaces the old loadFromXML() so that we can use loadFromXML() to load the attribs into the class.
-     */
-    abstract protected function setupObject();
-
-    /**
-     * This is the entry point method for loading data from XML.
-     * It calls a setupObject() method that must be implemented by the child class.
-     *
-     * @param array $attributes The attributes for the XML tag.
-     */
-    public function loadFromXML($attributes)
-    {
-        $this->attributes = array_change_key_case($attributes, CASE_LOWER);
-        $this->setupObject();
-    }
+    protected $vendorInfos = [];
 
     /**
      * Returns the assoc array of attributes.
@@ -66,8 +49,8 @@ abstract class XMLElement
      * Gets a particular attribute by [case-insensitive] name.
      * If attribute is not set then the $defaultValue is returned.
      *
-     * @param string $name         The [case-insensitive] name of the attribute to lookup.
-     * @param mixed  $defaultValue The default value to use in case the attribute is not set.
+     * @param string $name The [case-insensitive] name of the attribute to lookup.
+     * @param mixed $defaultValue The default value to use in case the attribute is not set.
      *
      * @return mixed The value of the attribute or $defaultValue if not set.
      */
@@ -82,49 +65,6 @@ abstract class XMLElement
     }
 
     /**
-     * Converts value specified in XML to a boolean value.
-     * This is to support the default value when used w/ a boolean column.
-     *
-     * @return bool
-     */
-    protected function booleanValue($val)
-    {
-        if (is_numeric($val)) {
-            return (bool) $val;
-        } else {
-            return (in_array(strtolower($val), array('true', 't', 'y', 'yes'), true) ? true : false);
-        }
-    }
-
-    protected function getDefaultValueForArray($stringValue)
-    {
-        $stringValue = trim($stringValue);
-
-        if (empty($stringValue)) {
-            return null;
-        }
-
-        $values = array();
-        foreach (explode(',', $stringValue) as $v) {
-            $values[] = trim($v);
-        }
-
-        $value = implode($values, ' | ');
-        if (empty($value) || ' | ' === $value) {
-            return null;
-        }
-
-        return sprintf('||%s||', $value);
-    }
-
-    /**
-     * Appends DOM elements to represent this object in XML.
-     *
-     * @param DOMNode $node
-     */
-    abstract public function appendXml(DOMNode $node);
-
-    /**
      * Sets an associated VendorInfo object.
      *
      * @param mixed $data VendorInfo object or XML attrib data (array)
@@ -134,7 +74,7 @@ abstract class XMLElement
     public function addVendorInfo($data)
     {
         if ($data instanceof VendorInfo) {
-            $vi = $data;
+            $vi                                = $data;
             $this->vendorInfos[$vi->getType()] = $vi;
 
             return $vi;
@@ -145,6 +85,23 @@ abstract class XMLElement
             return $this->addVendorInfo($vi); // call self w/ different param
         }
     }
+
+    /**
+     * This is the entry point method for loading data from XML.
+     * It calls a setupObject() method that must be implemented by the child class.
+     *
+     * @param array $attributes The attributes for the XML tag.
+     */
+    public function loadFromXML($attributes)
+    {
+        $this->attributes = array_change_key_case($attributes, CASE_LOWER);
+        $this->setupObject();
+    }
+
+    /**
+     * Replaces the old loadFromXML() so that we can use loadFromXML() to load the attribs into the class.
+     */
+    abstract protected function setupObject();
 
     /**
      * Gets the any associated VendorInfo object.
@@ -182,11 +139,22 @@ abstract class XMLElement
         }
         // fallback: maybe the behavior is loaded or autoloaded
         $gen = new PhpNameGenerator();
-        if (class_exists($class = $gen->generateName(array($bname, PhpNameGenerator::CONV_METHOD_PHPNAME)) . 'Behavior')) {
+        if (class_exists($class = $gen->generateName([$bname, PhpNameGenerator::CONV_METHOD_PHPNAME]) . 'Behavior')) {
             return $class;
         }
 
-        throw new InvalidArgumentException(sprintf('Unknown behavior "%s"; make sure you configured the propel.behavior.%s.class setting in your build.properties', $bname, $bname));
+        throw new InvalidArgumentException(sprintf('Unknown behavior "%s"; make sure you configured the propel.behavior.%s.class setting in your build.properties', $bname,
+            $bname));
+    }
+
+    /**
+     * Magic string method
+     *
+     * @see toString()
+     */
+    public function __toString()
+    {
+        return $this->toString();
     }
 
     /**
@@ -198,7 +166,7 @@ abstract class XMLElement
      */
     public function toString()
     {
-        $doc = new DOMDocument('1.0');
+        $doc               = new DOMDocument('1.0');
         $doc->formatOutput = true;
         $this->appendXml($doc);
         $xmlstr = $doc->saveXML();
@@ -207,12 +175,45 @@ abstract class XMLElement
     }
 
     /**
-     * Magic string method
+     * Appends DOM elements to represent this object in XML.
      *
-     * @see toString()
+     * @param DOMNode $node
      */
-    public function __toString()
+    abstract public function appendXml(DOMNode $node);
+
+    /**
+     * Converts value specified in XML to a boolean value.
+     * This is to support the default value when used w/ a boolean column.
+     *
+     * @return bool
+     */
+    protected function booleanValue($val)
     {
-        return $this->toString();
+        if (is_numeric($val)) {
+            return (bool)$val;
+        } else {
+            return (in_array(strtolower($val), ['true', 't', 'y', 'yes'], true) ? true : false);
+        }
+    }
+
+    protected function getDefaultValueForArray($stringValue)
+    {
+        $stringValue = trim($stringValue);
+
+        if (empty($stringValue)) {
+            return null;
+        }
+
+        $values = [];
+        foreach (explode(',', $stringValue) as $v) {
+            $values[] = trim($v);
+        }
+
+        $value = implode($values, ' | ');
+        if (empty($value) || ' | ' === $value) {
+            return null;
+        }
+
+        return sprintf('||%s||', $value);
     }
 }

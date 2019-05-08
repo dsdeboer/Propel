@@ -27,6 +27,16 @@ class PropelSQLDiffTask extends AbstractPropelDataModelTask
     protected $isCaseInsensitive = false;
 
     /**
+     * Gets the datasource name.
+     *
+     * @return string
+     */
+    public function getDatabaseName()
+    {
+        return $this->databaseName;
+    }
+
+    /**
      * Sets the datasource name.
      *
      * This will be used as the <database name=""> value in the generated schema.xml
@@ -39,53 +49,13 @@ class PropelSQLDiffTask extends AbstractPropelDataModelTask
     }
 
     /**
-     * Gets the datasource name.
-     *
-     * @return string
-     */
-    public function getDatabaseName()
-    {
-        return $this->databaseName;
-    }
-
-    /**
-     * Setter for the editorCmd property
-     *
-     * @param string $editorCmd
-     */
-    public function setEditorCmd($editorCmd)
-    {
-        $this->editorCmd = $editorCmd;
-    }
-
-    /**
-     * Getter for the editorCmd property
-     *
-     * @return string
-     */
-    public function getEditorCmd()
-    {
-        return $this->editorCmd;
-    }
-
-    /**
      * Defines whether the comparison is case insensitive
      *
      * @param boolean $isCaseInsensitive
      */
     public function setCaseInsensitive($isCaseInsensitive)
     {
-        $this->isCaseInsensitive = (boolean) $isCaseInsensitive;
-    }
-
-    /**
-     * Checks whether the comparison is case insensitive
-     *
-     * @return boolean
-     */
-    public function isCaseInsensitive()
-    {
-        return $this->isCaseInsensitive;
+        $this->isCaseInsensitive = (boolean)$isCaseInsensitive;
     }
 
     /**
@@ -114,10 +84,10 @@ class PropelSQLDiffTask extends AbstractPropelDataModelTask
         }
 
         $totalNbTables = 0;
-        $ad = new AppData();
+        $ad            = new AppData();
         foreach ($connections as $name => $params) {
             $this->log(sprintf('Connecting to database "%s" using DSN "%s"', $name, $params['dsn']), Project::MSG_VERBOSE);
-            $pdo = $generatorConfig->getBuildPDO($name);
+            $pdo      = $generatorConfig->getBuildPDO($name);
             $database = new Database($name);
             $platform = $generatorConfig->getConfiguredPlatform($pdo);
             if (!$platform->supportsMigrations()) {
@@ -126,7 +96,7 @@ class PropelSQLDiffTask extends AbstractPropelDataModelTask
             }
             $database->setPlatform($platform);
             $database->setDefaultIdMethod(IDMethod::NATIVE);
-            $parser = $generatorConfig->getConfiguredSchemaParser($pdo);
+            $parser   = $generatorConfig->getConfiguredSchemaParser($pdo);
             $nbTables = $parser->parse($database, $this);
             $ad->addDatabase($database);
             $totalNbTables += $nbTables;
@@ -140,13 +110,13 @@ class PropelSQLDiffTask extends AbstractPropelDataModelTask
 
         // loading model from XML
         $this->packageObjectModel = true;
-        $appDatasFromXml = $this->getDataModels();
-        $appDataFromXml = array_pop($appDatasFromXml);
+        $appDatasFromXml          = $this->getDataModels();
+        $appDataFromXml           = array_pop($appDatasFromXml);
 
         // comparing models
         $this->log('Comparing models...');
-        $migrationsUp = array();
-        $migrationsDown = array();
+        $migrationsUp   = [];
+        $migrationsDown = [];
         foreach ($ad->getDatabases() as $database) {
             $name = $database->getName();
             $this->log(sprintf('Comparing database "%s"', $name), Project::MSG_VERBOSE);
@@ -162,8 +132,8 @@ class PropelSQLDiffTask extends AbstractPropelDataModelTask
             }
 
             $this->log(sprintf('Structure of database was modified in datasource "%s": %s', $name, $databaseDiff->getDescription()));
-            $platform = $generatorConfig->getConfiguredPlatform(null, $name);
-            $migrationsUp[$name] = $platform->getModifyDatabaseDDL($databaseDiff);
+            $platform              = $generatorConfig->getConfiguredPlatform(null, $name);
+            $migrationsUp[$name]   = $platform->getModifyDatabaseDDL($databaseDiff);
             $migrationsDown[$name] = $platform->getModifyDatabaseDDL($databaseDiff->getReverseDiff());
         }
 
@@ -173,8 +143,8 @@ class PropelSQLDiffTask extends AbstractPropelDataModelTask
             return;
         }
 
-        $timestamp = time();
-        $migrationFileName = $manager->getMigrationFileName($timestamp);
+        $timestamp          = time();
+        $migrationFileName  = $manager->getMigrationFileName($timestamp);
         $migrationClassBody = $manager->getMigrationClassBody($migrationsUp, $migrationsDown, $timestamp);
 
         $_f = new PhingFile($this->getOutputDirectory(), $migrationFileName);
@@ -187,5 +157,35 @@ class PropelSQLDiffTask extends AbstractPropelDataModelTask
             $this->log('  Please review the generated SQL statements, and add data migration code if necessary.');
             $this->log('  Once the migration class is valid, call the "migrate" task to execute it.');
         }
+    }
+
+    /**
+     * Checks whether the comparison is case insensitive
+     *
+     * @return boolean
+     */
+    public function isCaseInsensitive()
+    {
+        return $this->isCaseInsensitive;
+    }
+
+    /**
+     * Getter for the editorCmd property
+     *
+     * @return string
+     */
+    public function getEditorCmd()
+    {
+        return $this->editorCmd;
+    }
+
+    /**
+     * Setter for the editorCmd property
+     *
+     * @param string $editorCmd
+     */
+    public function setEditorCmd($editorCmd)
+    {
+        $this->editorCmd = $editorCmd;
     }
 }

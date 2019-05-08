@@ -31,49 +31,6 @@ class IdMethodParameter extends XMLElement
     private $parentTable;
 
     /**
-     * Sets up the IdMethodParameter object based on the attributes that were passed to loadFromXML().
-     *
-     * @see        parent::loadFromXML()
-     */
-    protected function setupObject()
-    {
-        $this->name = $this->getAttribute("name");
-        $this->value = $this->getAttribute("value");
-    }
-
-    /**
-     * Get the parameter name
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * Set the parameter name
-     */
-    public function setName($name)
-    {
-        $this->name = $name;
-    }
-
-    /**
-     * Get the parameter value
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * Set the parameter value
-     */
-    public function setValue($value)
-    {
-        $this->value = $value;
-    }
-
-    /**
      * Set the parent Table of the id method
      */
     public function setTable(Table $parent)
@@ -109,5 +66,48 @@ class IdMethodParameter extends XMLElement
             $paramNode->setAttribute('name', $this->getName());
         }
         $paramNode->setAttribute('value', $this->getValue());
+    }
+
+    /**
+     * Get the parameter name
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * Set the parameter name
+     */
+    public function setName($name)
+    {
+        $this->name = $name;
+    }
+
+    /**
+     * Get the parameter value
+     */
+    public function getValue()
+    {
+        return $this->value;
+    }
+
+    /**
+     * Set the parameter value
+     */
+    public function setValue($value)
+    {
+        $this->value = $value;
+    }
+
+    /**
+     * Sets up the IdMethodParameter object based on the attributes that were passed to loadFromXML().
+     *
+     * @see        parent::loadFromXML()
+     */
+    protected function setupObject()
+    {
+        $this->name  = $this->getAttribute("name");
+        $this->value = $this->getAttribute("value");
     }
 }

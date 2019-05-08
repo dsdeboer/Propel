@@ -44,25 +44,7 @@ class SortableBehaviorQueryBuilderModifier
     public function __construct($behavior)
     {
         $this->behavior = $behavior;
-        $this->table = $behavior->getTable();
-    }
-
-    protected function getParameter($key)
-    {
-        return $this->behavior->getParameter($key);
-    }
-
-    protected function getColumn($name)
-    {
-        return $this->behavior->getColumnForParameter($name);
-    }
-
-    protected function setBuilder($builder)
-    {
-        $this->builder = $builder;
-        $this->objectClassname = $builder->getStubObjectBuilder()->getClassname();
-        $this->queryClassname = $builder->getStubQueryBuilder()->getClassname();
-        $this->peerClassname = $builder->getStubPeerBuilder()->getClassname();
+        $this->table    = $behavior->getTable();
     }
 
     public function queryMethods($builder)
@@ -93,6 +75,14 @@ class SortableBehaviorQueryBuilderModifier
         return $script;
     }
 
+    protected function setBuilder($builder)
+    {
+        $this->builder         = $builder;
+        $this->objectClassname = $builder->getStubObjectBuilder()->getClassname();
+        $this->queryClassname  = $builder->getStubQueryBuilder()->getClassname();
+        $this->peerClassname   = $builder->getStubPeerBuilder()->getClassname();
+    }
+
     protected function addInList(&$script)
     {
         list($methodSignature, $paramsDoc, $buildScope) = $this->behavior->generateScopePhp();
@@ -115,9 +105,14 @@ public function inList($methodSignature)
 ";
     }
 
+    protected function getParameter($key)
+    {
+        return $this->behavior->getParameter($key);
+    }
+
     protected function addFilterByRank(&$script)
     {
-        $useScope = $this->behavior->useScope();
+        $useScope      = $this->behavior->useScope();
         $peerClassname = $this->peerClassname;
 
         if ($useScope) {
@@ -234,13 +229,13 @@ public function findOneByRank(\$rank, " . ($useScope ? "$methodSignature, " : ""
 
         $script .= "
 /**
- * Returns " . ($useScope ? 'a' : 'the') ." list of objects
+ * Returns " . ($useScope ? 'a' : 'the') . " list of objects
  *";
-         if ($useScope) {
-             $script .= "
+        if ($useScope) {
+            $script .= "
 $paramsDoc
 ";
-         }
+        }
         $script .= "
  * @param      PropelPDO \$con	Connection to use.
  *
@@ -299,7 +294,7 @@ public function getMaxRank(" . ($useScope ? "$methodSignature, " : "") . "Propel
     // shift the objects with a position lower than the one of object
     \$this->addSelectColumn('MAX(' . {$this->peerClassname}::RANK_COL . ')');";
         if ($useScope) {
-        $script .= "
+            $script .= "
         $buildScope
     {$this->peerClassname}::sortableApplyScopeCriteria(\$this, \$scope);";
         }
@@ -338,7 +333,7 @@ public function getMaxRankArray(" . ($useScope ? "\$scope, " : "") . "PropelPDO 
     // shift the objects with a position lower than the one of object
     \$this->addSelectColumn('MAX(' . {$this->peerClassname}::RANK_COL . ')');";
         if ($useScope) {
-        $script .= "
+            $script .= "
     {$this->peerClassname}::sortableApplyScopeCriteria(\$this, \$scope);";
         }
         $script .= "
@@ -353,9 +348,9 @@ public function getMaxRankArray(" . ($useScope ? "\$scope, " : "") . "PropelPDO 
     {
         $this->builder->declareClasses('Propel');
         $peerClassname = $this->peerClassname;
-        $columnGetter = 'get' . $this->behavior->getColumnForParameter('rank_column')->getPhpName();
-        $columnSetter = 'set' . $this->behavior->getColumnForParameter('rank_column')->getPhpName();
-        $script .= "
+        $columnGetter  = 'get' . $this->behavior->getColumnForParameter('rank_column')->getPhpName();
+        $columnSetter  = 'set' . $this->behavior->getColumnForParameter('rank_column')->getPhpName();
+        $script        .= "
 /**
  * Reorder a set of sortable objects based on a list of id/position
  * Beware that there is no check made on the positions passed
@@ -392,6 +387,11 @@ public function reorder(array \$order, PropelPDO \$con = null)
     }
 }
 ";
+    }
+
+    protected function getColumn($name)
+    {
+        return $this->behavior->getColumnForParameter($name);
     }
 
 }

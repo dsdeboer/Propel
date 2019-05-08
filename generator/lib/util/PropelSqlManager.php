@@ -39,16 +39,6 @@ class PropelSqlManager
     protected $workingDirectory;
 
     /**
-     * Set the database connection settings
-     *
-     * @param array $connections
-     */
-    public function setConnections($connections)
-    {
-        $this->connections = $connections;
-    }
-
-    /**
      * Get the database connection settings
      *
      * @return array
@@ -58,102 +48,14 @@ class PropelSqlManager
         return $this->connections;
     }
 
-    public function hasConnection($connection)
-    {
-        return isset($this->connections[$connection]);
-    }
-
-    public function getConnection($datasource)
-    {
-        if (!$this->hasConnection($datasource)) {
-            throw new InvalidArgumentException(sprintf('Unknown datasource "%s"', $datasource));
-        }
-
-        return $this->connections[$datasource];
-    }
-
     /**
-     * @param GeneratorConfigInterface $generatorConfig
+     * Set the database connection settings
+     *
+     * @param array $connections
      */
-    public function setGeneratorConfig(GeneratorConfigInterface $generatorConfig)
+    public function setConnections($connections)
     {
-        $this->generatorConfig = $generatorConfig;
-    }
-
-    /**
-     * @return GeneratorConfigInterface
-     */
-    public function getGeneratorConfig()
-    {
-        return $this->generatorConfig;
-    }
-
-    /**
-     * @param array $dataModels
-     */
-    public function setDataModels($dataModels)
-    {
-        $this->dataModels = $dataModels;
-    }
-
-    /**
-     * @return array
-     */
-    public function getDataModels()
-    {
-        return $this->dataModels;
-    }
-
-    /**
-     * @param string $workingDirectory
-     */
-    public function setWorkingDirectory($workingDirectory)
-    {
-        $this->workingDirectory = $workingDirectory;
-    }
-
-    /**
-     * return string
-     */
-    public function getWorkingDirectory()
-    {
-        return $this->workingDirectory;
-    }
-
-    /**
-     * @return array
-     */
-    public function getDatabases()
-    {
-        if (null === $this->databases) {
-            $databases = array();
-            foreach ($this->getDataModels() as $package => $dataModel) {
-                foreach ($dataModel->getDatabases() as $database) {
-                    if (!isset($databases[$database->getName()])) {
-                        $databases[$database->getName()] = $database;
-                    } else {
-                        $tables = $database->getTables();
-                        // Merge tables from different schema.xml to the same database
-                        foreach ($tables as $table) {
-                            if (!$databases[$database->getName()]->hasTable($table->getName(), true)) {
-                                $databases[$database->getName()]->addTable($table);
-                            }
-                        }
-                    }
-                }
-            }
-            $this->databases = $databases;
-        }
-
-        return $this->databases;
-    }
-
-    /**
-     * @return string
-     */
-    public function getSqlDbMapFilename()
-    {
-        return $this->getWorkingDirectory() . DIRECTORY_SEPARATOR . 'sqldb.map';
+        $this->connections = $connections;
     }
 
     /**
@@ -186,6 +88,90 @@ class PropelSqlManager
     }
 
     /**
+     * @return array
+     */
+    public function getDatabases()
+    {
+        if (null === $this->databases) {
+            $databases = [];
+            foreach ($this->getDataModels() as $package => $dataModel) {
+                foreach ($dataModel->getDatabases() as $database) {
+                    if (!isset($databases[$database->getName()])) {
+                        $databases[$database->getName()] = $database;
+                    } else {
+                        $tables = $database->getTables();
+                        // Merge tables from different schema.xml to the same database
+                        foreach ($tables as $table) {
+                            if (!$databases[$database->getName()]->hasTable($table->getName(), true)) {
+                                $databases[$database->getName()]->addTable($table);
+                            }
+                        }
+                    }
+                }
+            }
+            $this->databases = $databases;
+        }
+
+        return $this->databases;
+    }
+
+    /**
+     * @return array
+     */
+    public function getDataModels()
+    {
+        return $this->dataModels;
+    }
+
+    /**
+     * @param array $dataModels
+     */
+    public function setDataModels($dataModels)
+    {
+        $this->dataModels = $dataModels;
+    }
+
+    /**
+     * @return GeneratorConfigInterface
+     */
+    public function getGeneratorConfig()
+    {
+        return $this->generatorConfig;
+    }
+
+    /**
+     * @param GeneratorConfigInterface $generatorConfig
+     */
+    public function setGeneratorConfig(GeneratorConfigInterface $generatorConfig)
+    {
+        $this->generatorConfig = $generatorConfig;
+    }
+
+    /**
+     * return string
+     */
+    public function getWorkingDirectory()
+    {
+        return $this->workingDirectory;
+    }
+
+    /**
+     * @param string $workingDirectory
+     */
+    public function setWorkingDirectory($workingDirectory)
+    {
+        $this->workingDirectory = $workingDirectory;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSqlDbMapFilename()
+    {
+        return $this->getWorkingDirectory() . DIRECTORY_SEPARATOR . 'sqldb.map';
+    }
+
+    /**
      * @param string $datasource A datasource name.
      *
      * @return bool
@@ -194,7 +180,7 @@ class PropelSqlManager
      */
     public function insertSql($datasource = null)
     {
-        $statementsToInsert = array();
+        $statementsToInsert = [];
         foreach ($this->getProperties($this->getSqlDbMapFilename()) as $sqlFile => $database) {
             if (null !== $datasource && $database !== $datasource) {
                 // skip
@@ -202,7 +188,7 @@ class PropelSqlManager
             }
 
             if (!isset($statementsToInsert[$database])) {
-                $statementsToInsert[$database] = array();
+                $statementsToInsert[$database] = [];
             }
             if (null === $database || (null !== $database && $database === $datasource)) {
                 $filename = $this->getWorkingDirectory() . DIRECTORY_SEPARATOR . $sqlFile;
@@ -240,6 +226,36 @@ class PropelSqlManager
     }
 
     /**
+     * Returns an array of properties as key/value pairs from an input file.
+     *
+     * @param string $file A file properties.
+     *
+     * @return array     An array of properties as key/value pairs.
+     * @throws Exception
+     */
+    protected function getProperties($file)
+    {
+        $properties = [];
+
+        if (false === $lines = @file($file)) {
+            throw new Exception(sprintf('Unable to parse contents of "%s".', $file));
+        }
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+
+            if ('' == $line || in_array($line[0], ['#', ';'])) {
+                continue;
+            }
+
+            $pos                                      = strpos($line, '=');
+            $properties[trim(substr($line, 0, $pos))] = trim(substr($line, $pos + 1));
+        }
+
+        return $properties;
+    }
+
+    /**
      * Gets a PDO connection for a given datasource.
      *
      * @return PDO
@@ -247,7 +263,7 @@ class PropelSqlManager
     protected function getPdoConnection($datasource)
     {
         $buildConnection = $this->getConnection($datasource);
-        $dsn = str_replace("@DB@", $datasource, $buildConnection['dsn']);
+        $dsn             = str_replace("@DB@", $datasource, $buildConnection['dsn']);
 
         // Set user + password to null if they are empty strings or missing
         $username = isset($buildConnection['user']) && $buildConnection['user'] ? $buildConnection['user'] : null;
@@ -259,33 +275,17 @@ class PropelSqlManager
         return $pdo;
     }
 
-    /**
-     * Returns an array of properties as key/value pairs from an input file.
-     *
-     * @param string $file A file properties.
-     *
-     * @return array     An array of properties as key/value pairs.
-     * @throws Exception
-     */
-    protected function getProperties($file)
+    public function getConnection($datasource)
     {
-        $properties = array();
-
-        if (false === $lines = @file($file)) {
-            throw new Exception(sprintf('Unable to parse contents of "%s".', $file));
+        if (!$this->hasConnection($datasource)) {
+            throw new InvalidArgumentException(sprintf('Unknown datasource "%s"', $datasource));
         }
 
-        foreach ($lines as $line) {
-            $line = trim($line);
+        return $this->connections[$datasource];
+    }
 
-            if ('' == $line || in_array($line[0], array('#', ';'))) {
-                continue;
-            }
-
-            $pos = strpos($line, '=');
-            $properties[trim(substr($line, 0, $pos))] = trim(substr($line, $pos + 1));
-        }
-
-        return $properties;
+    public function hasConnection($connection)
+    {
+        return isset($this->connections[$connection]);
     }
 }

@@ -30,57 +30,12 @@ class PropelDatabaseComparator
         $this->databaseDiff = (null === $databaseDiff) ? new PropelDatabaseDiff() : $databaseDiff;
     }
 
-    public function getDatabaseDiff()
-    {
-        return $this->databaseDiff;
-    }
-
-    /**
-     * Setter for the fromDatabase property
-     *
-     * @param Database $fromDatabase
-     */
-    public function setFromDatabase(Database $fromDatabase)
-    {
-        $this->fromDatabase = $fromDatabase;
-    }
-
-    /**
-     * Getter for the fromDatabase property
-     *
-     * @return Database
-     */
-    public function getFromDatabase()
-    {
-        return $this->fromDatabase;
-    }
-
-    /**
-     * Setter for the toDatabase property
-     *
-     * @param Database $toDatabase
-     */
-    public function setToDatabase(Database $toDatabase)
-    {
-        $this->toDatabase = $toDatabase;
-    }
-
-    /**
-     * Getter for the toDatabase property
-     *
-     * @return Database
-     */
-    public function getToDatabase()
-    {
-        return $this->toDatabase;
-    }
-
     /**
      * Compute and return the difference between two database objects
      *
      * @param Database $fromDatabase
      * @param Database $toDatabase
-     * @param boolean  $caseInsensitive Whether the comparison is case insensitive.
+     * @param boolean $caseInsensitive Whether the comparison is case insensitive.
      *                                  False by default.
      *
      * @return PropelDatabaseDiff|boolean return false if the two databases are similar
@@ -108,8 +63,8 @@ class PropelDatabaseComparator
      */
     public function compareTables($caseInsensitive = false)
     {
-        $fromDatabaseTables = $this->fromDatabase->getTables();
-        $toDatabaseTables = $this->toDatabase->getTables();
+        $fromDatabaseTables  = $this->fromDatabase->getTables();
+        $toDatabaseTables    = $this->toDatabase->getTables();
         $databaseDifferences = 0;
 
         // check for new tables in $toDatabase
@@ -131,7 +86,7 @@ class PropelDatabaseComparator
         // check for table differences
         foreach ($fromDatabaseTables as $fromTable) {
             if ($this->toDatabase->hasTable($fromTable->getName(), $caseInsensitive) && !$fromTable->isSkipSql()) {
-                $toTable = $this->toDatabase->getTable($fromTable->getName(), $caseInsensitive);
+                $toTable      = $this->toDatabase->getTable($fromTable->getName(), $caseInsensitive);
                 $databaseDiff = PropelTableComparator::computeDiff($fromTable, $toTable, $caseInsensitive);
                 if ($databaseDiff) {
                     $this->databaseDiff->addModifiedTable($fromTable->getName(), $databaseDiff);
@@ -156,5 +111,50 @@ class PropelDatabaseComparator
         }
 
         return $databaseDifferences;
+    }
+
+    public function getDatabaseDiff()
+    {
+        return $this->databaseDiff;
+    }
+
+    /**
+     * Getter for the fromDatabase property
+     *
+     * @return Database
+     */
+    public function getFromDatabase()
+    {
+        return $this->fromDatabase;
+    }
+
+    /**
+     * Setter for the fromDatabase property
+     *
+     * @param Database $fromDatabase
+     */
+    public function setFromDatabase(Database $fromDatabase)
+    {
+        $this->fromDatabase = $fromDatabase;
+    }
+
+    /**
+     * Getter for the toDatabase property
+     *
+     * @return Database
+     */
+    public function getToDatabase()
+    {
+        return $this->toDatabase;
+    }
+
+    /**
+     * Setter for the toDatabase property
+     *
+     * @param Database $toDatabase
+     */
+    public function setToDatabase(Database $toDatabase)
+    {
+        $this->toDatabase = $toDatabase;
     }
 }

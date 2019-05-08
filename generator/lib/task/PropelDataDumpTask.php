@@ -29,77 +29,48 @@ class PropelDataDumpTask extends AbstractPropelDataModelTask
 {
 
     /**
+     * The database connection used to retrieve the data to dump.
+     * Needs to be public so that the TableInfo class can access it.
+     */
+    public $conn;
+    /**
      * Database name.
      * The database name may be optionally specified in the XML if you only want
      * to dump the contents of one database.
      */
     private $databaseName;
-
     /**
      * Database URL used for Propel connection.
      * This is a PEAR-compatible (loosely) DSN URL.
      */
     private $databaseUrl;
-
     /**
      * Database driver used for Propel connection.
      * This should normally be left blank so that default (Propel built-in) driver for database type is used.
      */
     private $databaseDriver;
-
     /**
      * Database user used for Propel connection.
      *
      * @deprecated Put username in databaseUrl.
      */
     private $databaseUser;
-
     /**
      * Database password used for Propel connection.
      *
      * @deprecated Put password in databaseUrl.
      */
     private $databasePassword;
-
     /**
      * Properties file that maps a data XML file to a particular database.
      *
      * @var        PhingFile
      */
     private $datadbmap;
-
-    /**
-     * The database connection used to retrieve the data to dump.
-     * Needs to be public so that the TableInfo class can access it.
-     */
-    public $conn;
-
     /**
      * The statement used to acquire the data to dump.
      */
     private $stmt;
-
-    /**
-     * Set the file that maps between data XML files and databases.
-     *
-     * @param PhingFile $datadbmap the db map
-     *
-     * @return void
-     */
-    public function setDataDbMap(PhingFile $datadbmap)
-    {
-        $this->datadbmap = $datadbmap;
-    }
-
-    /**
-     * Get the file that maps between data XML files and databases.
-     *
-     * @return PhingFile $datadbmap.
-     */
-    public function getDataDbMap()
-    {
-        return $this->datadbmap;
-    }
 
     /**
      * Get the database name to dump
@@ -207,6 +178,53 @@ class PropelDataDumpTask extends AbstractPropelDataModelTask
     }
 
     /**
+     * Iterates through each datamodel/database, dumps the contents of all tables and creates a DOM XML doc.
+     *
+     * @return void
+     * @throws BuildException
+     */
+    public function main()
+    {
+        $this->validate();
+
+        $buf = "Database settings:\n"
+            . " driver: " . ($this->databaseDriver ? $this->databaseDriver : "(default)") . "\n"
+            . " URL: " . $this->databaseUrl . "\n"
+            . ($this->databaseUser ? " user: " . $this->databaseUser . "\n" : "")
+            . ($this->databasePassword ? " password: " . $this->databasePassword . "\n" : "");
+
+        $this->log($buf, Project::MSG_VERBOSE);
+
+        // 1) First create the Data XML -> database name map.
+        $this->createDataDbMap();
+
+        // 2) Now go create the XML files from teh database(s)
+        foreach ($this->getDataModels() as $dataModel) { // there is really one 1 db per datamodel
+            foreach ($dataModel->getDatabases() as $database) {
+
+                // if database name is specified, then we only want to dump that one db.
+                if (empty($this->databaseName) || ($this->databaseName && $database->getName() == $this->databaseName)) {
+
+                    $outFile = $this->getMappedFile($dataModel->getName());
+
+                    $this->log("Dumping data to XML for database: " . $database->getName());
+                    $this->log("Writing to XML file: " . $outFile->getName());
+
+                    try {
+                        $this->conn = $dataModel->getGeneratorConfig()->getBuildPDO($database->getName());
+
+                        $doc = $this->createXMLDoc($database);
+                        $doc->save($outFile->getAbsolutePath());
+                    } catch (SQLException $se) {
+                        $this->log("SQLException while connecting to DB: " . $se->getMessage(), Project::MSG_ERR);
+                        throw new BuildException($se);
+                    }
+                } // if databaseName && database->getName == databaseName
+            } // foreach database
+        } // foreach datamodel
+    }
+
+    /**
      * Create the data XML -> database map.
      *
      * This is necessary because there is currently no other method of knowing which
@@ -248,63 +266,25 @@ class PropelDataDumpTask extends AbstractPropelDataModelTask
     }
 
     /**
-     * Iterates through each datamodel/database, dumps the contents of all tables and creates a DOM XML doc.
+     * Get the file that maps between data XML files and databases.
      *
-     * @return void
-     * @throws BuildException
+     * @return PhingFile $datadbmap.
      */
-    public function main()
+    public function getDataDbMap()
     {
-        $this->validate();
-
-        $buf = "Database settings:\n"
-            . " driver: " . ($this->databaseDriver ? $this->databaseDriver : "(default)" ). "\n"
-            . " URL: " . $this->databaseUrl . "\n"
-            . ($this->databaseUser ? " user: " . $this->databaseUser . "\n" : "")
-            . ($this->databasePassword ? " password: " . $this->databasePassword . "\n" : "");
-
-        $this->log($buf, Project::MSG_VERBOSE);
-
-        // 1) First create the Data XML -> database name map.
-        $this->createDataDbMap();
-
-        // 2) Now go create the XML files from teh database(s)
-        foreach ($this->getDataModels() as $dataModel) { // there is really one 1 db per datamodel
-            foreach ($dataModel->getDatabases() as $database) {
-
-                // if database name is specified, then we only want to dump that one db.
-                if (empty($this->databaseName) || ($this->databaseName && $database->getName() == $this->databaseName)) {
-
-                    $outFile = $this->getMappedFile($dataModel->getName());
-
-                    $this->log("Dumping data to XML for database: " . $database->getName());
-                    $this->log("Writing to XML file: " . $outFile->getName());
-
-                    try {
-                        $this->conn = $dataModel->getGeneratorConfig()->getBuildPDO($database->getName());
-
-                        $doc = $this->createXMLDoc($database);
-                        $doc->save($outFile->getAbsolutePath());
-                    } catch (SQLException $se) {
-                        $this->log("SQLException while connecting to DB: " . $se->getMessage(), Project::MSG_ERR);
-                        throw new BuildException($se);
-                    }
-                } // if databaseName && database->getName == databaseName
-            } // foreach database
-        } // foreach datamodel
+        return $this->datadbmap;
     }
 
     /**
-     * Gets PDOStatement of query to fetch all data from a table.
+     * Set the file that maps between data XML files and databases.
      *
-     * @param string                  $tableName
-     * @param PropelPlatformInterface $platform
+     * @param PhingFile $datadbmap the db map
      *
-     * @return PDOStatement
+     * @return void
      */
-    private function getTableDataStmt($tableName, PropelPlatformInterface $platform)
+    public function setDataDbMap(PhingFile $datadbmap)
     {
-        return $this->conn->query("SELECT * FROM " . $platform->quoteIdentifier($tableName));
+        $this->datadbmap = $datadbmap;
     }
 
     /**
@@ -316,7 +296,7 @@ class PropelDataDumpTask extends AbstractPropelDataModelTask
      */
     private function createXMLDoc(Database $database)
     {
-        $doc = new DOMDocument('1.0', 'utf-8');
+        $doc               = new DOMDocument('1.0', 'utf-8');
         $doc->formatOutput = true; // pretty printing
         $doc->appendChild($doc->createComment("Created by PropelDataDumpTask."));
 
@@ -346,5 +326,18 @@ class PropelDataDumpTask extends AbstractPropelDataModelTask
         }
 
         return $doc;
+    }
+
+    /**
+     * Gets PDOStatement of query to fetch all data from a table.
+     *
+     * @param string $tableName
+     * @param PropelPlatformInterface $platform
+     *
+     * @return PDOStatement
+     */
+    private function getTableDataStmt($tableName, PropelPlatformInterface $platform)
+    {
+        return $this->conn->query("SELECT * FROM " . $platform->quoteIdentifier($tableName));
     }
 }

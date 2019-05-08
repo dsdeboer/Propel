@@ -65,13 +65,20 @@ class DefaultPlatform implements PropelPlatformInterface
     }
 
     /**
-     * Returns the database connection to use for this Platform class.
-     *
-     * @return PDO The database connection or NULL if none has been set.
+     * Initialize the type -> Domain mapping.
      */
-    public function getConnection()
+    protected function initialize()
     {
-        return $this->con;
+        $this->schemaDomainMap = [];
+        foreach (PropelTypes::getPropelTypes() as $type) {
+            $this->schemaDomainMap[$type] = new Domain($type);
+        }
+        // BU_* no longer needed, so map these to the DATE/TIMESTAMP domains
+        $this->schemaDomainMap[PropelTypes::BU_DATE]      = new Domain(PropelTypes::DATE);
+        $this->schemaDomainMap[PropelTypes::BU_TIMESTAMP] = new Domain(PropelTypes::TIMESTAMP);
+
+        // Boolean is a bit special, since typically it must be mapped to INT type.
+        $this->schemaDomainMap[PropelTypes::BOOLEAN] = new Domain(PropelTypes::BOOLEAN, "INTEGER");
     }
 
     /**
@@ -85,49 +92,6 @@ class DefaultPlatform implements PropelPlatformInterface
     }
 
     /**
-     * Gets a specific propel (renamed) property from the build.
-     *
-     * @param string $name
-     *
-     * @return mixed
-     */
-    protected function getBuildProperty($name)
-    {
-        if ($this->generatorConfig !== null) {
-            return $this->generatorConfig->getBuildProperty($name);
-        }
-
-        return null;
-    }
-
-    /**
-     * Initialize the type -> Domain mapping.
-     */
-    protected function initialize()
-    {
-        $this->schemaDomainMap = array();
-        foreach (PropelTypes::getPropelTypes() as $type) {
-            $this->schemaDomainMap[$type] = new Domain($type);
-        }
-        // BU_* no longer needed, so map these to the DATE/TIMESTAMP domains
-        $this->schemaDomainMap[PropelTypes::BU_DATE] = new Domain(PropelTypes::DATE);
-        $this->schemaDomainMap[PropelTypes::BU_TIMESTAMP] = new Domain(PropelTypes::TIMESTAMP);
-
-        // Boolean is a bit special, since typically it must be mapped to INT type.
-        $this->schemaDomainMap[PropelTypes::BOOLEAN] = new Domain(PropelTypes::BOOLEAN, "INTEGER");
-    }
-
-    /**
-     * Adds a mapping entry for specified Domain.
-     *
-     * @param Domain $domain
-     */
-    protected function setSchemaDomainMapping(Domain $domain)
-    {
-        $this->schemaDomainMap[$domain->getType()] = $domain;
-    }
-
-    /**
      * Returns the short name of the database type that this platform represents.
      * For example MysqlPlatform->getDatabaseType() returns 'mysql'.
      *
@@ -136,19 +100,14 @@ class DefaultPlatform implements PropelPlatformInterface
     public function getDatabaseType()
     {
         $clazz = get_class($this);
-        $pos = strpos($clazz, 'Platform');
+        $pos   = strpos($clazz, 'Platform');
 
         return strtolower(substr($clazz, 0, $pos));
     }
 
-    /**
-     * Returns the max column length supported by the db.
-     *
-     * @return int The max column length
-     */
-    public function getMaxColumnNameLength()
+    public function isNativeIdMethodAutoIncrement()
     {
-        return 64;
+        return $this->getNativeIdMethod() == PropelPlatformInterface::IDENTITY;
     }
 
     /**
@@ -159,11 +118,6 @@ class DefaultPlatform implements PropelPlatformInterface
     public function getNativeIdMethod()
     {
         return PropelPlatformInterface::IDENTITY;
-    }
-
-    public function isNativeIdMethodAutoIncrement()
-    {
-        return $this->getNativeIdMethod() == PropelPlatformInterface::IDENTITY;
     }
 
     /**
@@ -181,15 +135,6 @@ class DefaultPlatform implements PropelPlatformInterface
         }
 
         return $this->schemaDomainMap[$propelType];
-    }
-
-    /**
-     * @return string The RDBMS-specific SQL fragment for <code>NULL</code>
-     * or <code>NOT NULL</code>.
-     */
-    public function getNullString($notNull)
-    {
-        return ($notNull ? "NOT NULL" : "");
     }
 
     /**
@@ -212,10 +157,10 @@ class DefaultPlatform implements PropelPlatformInterface
      */
     public function getSequenceName(Table $table)
     {
-        static $longNamesMap = array();
+        static $longNamesMap = [];
         $result = null;
         if ($table->getIdMethod() == IDMethod::NATIVE) {
-            $idMethodParams = $table->getIdMethodParameters();
+            $idMethodParams      = $table->getIdMethodParameters();
             $maxIdentifierLength = $this->getMaxColumnNameLength();
             if (empty($idMethodParams)) {
                 if (strlen($table->getName() . "_SEQ") > $maxIdentifierLength) {
@@ -232,6 +177,16 @@ class DefaultPlatform implements PropelPlatformInterface
         }
 
         return $result;
+    }
+
+    /**
+     * Returns the max column length supported by the db.
+     *
+     * @return int The max column length
+     */
+    public function getMaxColumnNameLength()
+    {
+        return 64;
     }
 
     /**
@@ -264,13 +219,15 @@ class DefaultPlatform implements PropelPlatformInterface
     {
     }
 
-    /**
-     * Gets the requests to execute at the end of a DDL file
-     *
-     * @return string
-     */
-    public function getEndDDL()
+    public function getCommentBlockDDL($comment)
     {
+        $pattern = "
+-----------------------------------------------------------------------
+-- %s
+-----------------------------------------------------------------------
+";
+
+        return sprintf($pattern, $comment);
     }
 
     /**
@@ -286,6 +243,18 @@ DROP TABLE " . $this->quoteIdentifier($table->getName()) . ";
     }
 
     /**
+     * Quotes identifiers used in database SQL.
+     *
+     * @param string $text
+     *
+     * @return string Quoted identifier.
+     */
+    public function quoteIdentifier($text)
+    {
+        return $this->isIdentifierQuotingEnabled ? '"' . strtr($text, ['.' => '"."']) . '"' : $text;
+    }
+
+    /**
      * Builds the DDL SQL to add a table
      * without index and foreign keys
      *
@@ -295,7 +264,7 @@ DROP TABLE " . $this->quoteIdentifier($table->getName()) . ";
     {
         $tableDescription = $table->hasDescription() ? $this->getCommentLineDDL($table->getDescription()) : '';
 
-        $lines = array();
+        $lines = [];
 
         foreach ($table->getColumns() as $column) {
             $lines[] = $this->getColumnDDL($column);
@@ -322,6 +291,14 @@ DROP TABLE " . $this->quoteIdentifier($table->getName()) . ";
         return sprintf($pattern, $tableDescription, $this->quoteIdentifier($table->getName()), implode($sep, $lines));
     }
 
+    public function getCommentLineDDL($comment)
+    {
+        $pattern = "-- %s
+";
+
+        return sprintf($pattern, $comment);
+    }
+
     /**
      * Builds the DDL SQL for a Column object.
      *
@@ -329,8 +306,8 @@ DROP TABLE " . $this->quoteIdentifier($table->getName()) . ";
      */
     public function getColumnDDL(Column $col)
     {
-        $domain = $col->getDomain();
-        $ddl = array($this->quoteIdentifier($col->getName()));
+        $domain  = $col->getDomain();
+        $ddl     = [$this->quoteIdentifier($col->getName())];
         $sqlType = $domain->getSqlType();
 
         if ($this->hasSize($sqlType) && $col->isDefaultSqlType($this)) {
@@ -355,13 +332,25 @@ DROP TABLE " . $this->quoteIdentifier($table->getName()) . ";
     }
 
     /**
+     * Returns if the RDBMS-specific SQL type has a size attribute.
+     *
+     * @param string $sqlType the SQL type
+     *
+     * @return boolean True if the type has a size attribute
+     */
+    public function hasSize($sqlType)
+    {
+        return true;
+    }
+
+    /**
      * Returns the SQL for the default value of a Column object
      *
      * @return string
      */
     public function getColumnDefaultValueDDL(Column $col)
     {
-        $default = '';
+        $default      = '';
         $defaultValue = $col->getDefaultValue();
         if ($defaultValue !== null) {
             $default .= 'DEFAULT ';
@@ -392,42 +381,94 @@ DROP TABLE " . $this->quoteIdentifier($table->getName()) . ";
     }
 
     /**
-     * Creates a delimiter-delimited string list of column names, quoted using quoteIdentifier().
+     * Quote and escape needed characters in the string for underlying RDBMS.
      *
-     * @example
-     * <code>
-     * echo $platform->getColumnListDDL(array('foo', 'bar');
-     * // '"foo","bar"'
-     * </code>
-     *
-     * @param      array Column[] or string[]
-     * @param string $delim The delimiter to use in separating the column names.
+     * @param string $text
      *
      * @return string
      */
-    public function getColumnListDDL($columns, $delimiter = ',')
+    public function quote($text)
     {
-        $list = array();
-        foreach ($columns as $column) {
-            if ($column instanceof Column) {
-                $column = $column->getName();
-            }
-            $list[] = $this->quoteIdentifier($column);
+        if ($con = $this->getConnection()) {
+            return $con->quote($text);
+        } else {
+            return "'" . $this->disconnectedEscapeText($text) . "'";
         }
-
-        return implode($delimiter, $list);
     }
 
     /**
-     * Returns the name of a table primary key
+     * Returns the database connection to use for this Platform class.
+     *
+     * @return PDO The database connection or NULL if none has been set.
+     */
+    public function getConnection()
+    {
+        return $this->con;
+    }
+
+    /**
+     * Method to escape text when no connection has been set.
+     *
+     * The subclasses can implement this using string replacement functions
+     * or native DB methods.
+     *
+     * @param string $text Text that needs to be escaped.
      *
      * @return string
      */
-    public function getPrimaryKeyName(Table $table)
+    protected function disconnectedEscapeText($text)
     {
-        $tableName = $table->getCommonName();
+        return str_replace("'", "''", $text);
+    }
 
-        return $tableName . '_PK';
+    /**
+     * Returns the boolean value for the RDBMS.
+     *
+     * This value should match the boolean value that is set
+     * when using Propel's PreparedStatement::setBoolean().
+     *
+     * This function is used to set default column values when building
+     * SQL.
+     *
+     * @param mixed $tf A boolean or string representation of boolean ('y', 'true').
+     *
+     * @return mixed
+     */
+    public function getBooleanString($b)
+    {
+        $b = ($b === true || strtolower($b) === 'true' || $b === 1 || $b === '1' || strtolower($b) === 'y' || strtolower($b) === 'yes');
+
+        return ($b ? '1' : '0');
+    }
+
+    public function getPhpArrayString($stringValue)
+    {
+        $stringValue = trim($stringValue);
+
+        if (empty($stringValue)) {
+            return null;
+        }
+
+        $values = [];
+        foreach (explode(',', $stringValue) as $v) {
+            $values[] = trim($v);
+        }
+
+        $value = implode($values, ' | ');
+        if (empty($value) || ' | ' === $value) {
+            return null;
+        }
+
+        return $this->quote(sprintf('||%s||', $value));
+    }
+
+    /**
+     * @return string The RDBMS-specific SQL fragment for <code>NULL</code>
+     * or <code>NOT NULL</code>.
+     */
+    public function getNullString($notNull)
+    {
+        return ($notNull ? "NOT NULL" : "");
     }
 
     /**
@@ -443,41 +484,42 @@ DROP TABLE " . $this->quoteIdentifier($table->getName()) . ";
     }
 
     /**
-     * Builds the DDL SQL to drop the primary key of a table.
+     * Creates a delimiter-delimited string list of column names, quoted using quoteIdentifier().
      *
-     * @param Table $table
+     * @param array Column[] or string[]
+     * @param string $delim The delimiter to use in separating the column names.
      *
      * @return string
+     * @example
+     * <code>
+     * echo $platform->getColumnListDDL(array('foo', 'bar');
+     * // '"foo","bar"'
+     * </code>
+     *
      */
-    public function getDropPrimaryKeyDDL(Table $table)
+    public function getColumnListDDL($columns, $delimiter = ',')
     {
-        $pattern = "
-ALTER TABLE %s DROP CONSTRAINT %s;
-";
+        $list = [];
+        foreach ($columns as $column) {
+            if ($column instanceof Column) {
+                $column = $column->getName();
+            }
+            $list[] = $this->quoteIdentifier($column);
+        }
 
-        return sprintf($pattern,
-            $this->quoteIdentifier($table->getName()),
-            $this->quoteIdentifier($this->getPrimaryKeyName($table))
-        );
+        return implode($delimiter, $list);
     }
 
     /**
-     * Builds the DDL SQL to add the primary key of a table.
+     * Builds the DDL SQL for a Unique constraint object.
      *
-     * @param Table $table
+     * @param Unique $unique
      *
      * @return string
      */
-    public function getAddPrimaryKeyDDL(Table $table)
+    public function getUniqueDDL(Unique $unique)
     {
-        $pattern = "
-ALTER TABLE %s ADD %s;
-";
-
-        return sprintf($pattern,
-            $this->quoteIdentifier($table->getName()),
-            $this->getPrimaryKeyDDL($table)
-        );
+        return sprintf('UNIQUE (%s)', $this->getColumnListDDL($unique->getColumns()));
     }
 
     /**
@@ -516,46 +558,6 @@ CREATE %sINDEX %s ON %s (%s);
             $this->quoteIdentifier($index->getTable()->getName()),
             $this->getColumnListDDL($index->getColumns())
         );
-    }
-
-    /**
-     * Builds the DDL SQL to drop an Index.
-     *
-     * @param Index $index
-     *
-     * @return string
-     */
-    public function getDropIndexDDL(Index $index)
-    {
-        $pattern = "
-DROP INDEX %s;
-";
-
-        return sprintf($pattern, $this->quoteIdentifier($index->getName()));
-    }
-
-    /**
-     * Builds the DDL SQL for an Index object.
-     *
-     * @param Index $index
-     *
-     * @return string
-     */
-    public function getIndexDDL(Index $index)
-    {
-        return sprintf('%sINDEX %s (%s)', $index->getIsUnique() ? 'UNIQUE ' : '', $this->quoteIdentifier($index->getName()), $this->getColumnListDDL($index->getColumns()));
-    }
-
-    /**
-     * Builds the DDL SQL for a Unique constraint object.
-     *
-     * @param Unique $unique
-     *
-     * @return string
-     */
-    public function getUniqueDDL(Unique $unique)
-    {
-        return sprintf('UNIQUE (%s)', $this->getColumnListDDL($unique->getColumns()));
     }
 
     /**
@@ -598,28 +600,6 @@ ALTER TABLE %s ADD %s;
     }
 
     /**
-     * Builds the DDL SQL to drop a foreign key.
-     *
-     * @param ForeignKey $fk
-     *
-     * @return string
-     */
-    public function getDropForeignKeyDDL(ForeignKey $fk)
-    {
-        if ($fk->isSkipSql()) {
-            return;
-        }
-        $pattern = "
-ALTER TABLE %s DROP CONSTRAINT %s;
-";
-
-        return sprintf($pattern,
-            $this->quoteIdentifier($fk->getTable()->getName()),
-            $this->quoteIdentifier($fk->getName())
-        );
-    }
-
-    /**
      * Builds the DDL SQL for a ForeignKey object.
      *
      * @return string
@@ -632,7 +612,7 @@ ALTER TABLE %s DROP CONSTRAINT %s;
         $pattern = "CONSTRAINT %s
     FOREIGN KEY (%s)
     REFERENCES %s (%s)";
-        $script = sprintf($pattern,
+        $script  = sprintf($pattern,
             $this->quoteIdentifier($fk->getName()),
             $this->getColumnListDDL($fk->getLocalColumns()),
             $this->quoteIdentifier($fk->getForeignTableName()),
@@ -650,23 +630,25 @@ ALTER TABLE %s DROP CONSTRAINT %s;
         return $script;
     }
 
-    public function getCommentLineDDL($comment)
+    /**
+     * Gets the requests to execute at the end of a DDL file
+     *
+     * @return string
+     */
+    public function getEndDDL()
     {
-        $pattern = "-- %s
-";
-
-        return sprintf($pattern, $comment);
     }
 
-    public function getCommentBlockDDL($comment)
+    /**
+     * Builds the DDL SQL for an Index object.
+     *
+     * @param Index $index
+     *
+     * @return string
+     */
+    public function getIndexDDL(Index $index)
     {
-        $pattern = "
------------------------------------------------------------------------
--- %s
------------------------------------------------------------------------
-";
-
-        return sprintf($pattern, $comment);
+        return sprintf('%sINDEX %s (%s)', $index->getIsUnique() ? 'UNIQUE ' : '', $this->quoteIdentifier($index->getName()), $this->getColumnListDDL($index->getColumns()));
     }
 
     /**
@@ -788,6 +770,191 @@ ALTER TABLE %s RENAME TO %s;
     }
 
     /**
+     * Builds the DDL SQL to drop the primary key of a table.
+     *
+     * @param Table $table
+     *
+     * @return string
+     */
+    public function getDropPrimaryKeyDDL(Table $table)
+    {
+        $pattern = "
+ALTER TABLE %s DROP CONSTRAINT %s;
+";
+
+        return sprintf($pattern,
+            $this->quoteIdentifier($table->getName()),
+            $this->quoteIdentifier($this->getPrimaryKeyName($table))
+        );
+    }
+
+    /**
+     * Returns the name of a table primary key
+     *
+     * @return string
+     */
+    public function getPrimaryKeyName(Table $table)
+    {
+        $tableName = $table->getCommonName();
+
+        return $tableName . '_PK';
+    }
+
+    /**
+     * Builds the DDL SQL to drop a foreign key.
+     *
+     * @param ForeignKey $fk
+     *
+     * @return string
+     */
+    public function getDropForeignKeyDDL(ForeignKey $fk)
+    {
+        if ($fk->isSkipSql()) {
+            return;
+        }
+        $pattern = "
+ALTER TABLE %s DROP CONSTRAINT %s;
+";
+
+        return sprintf($pattern,
+            $this->quoteIdentifier($fk->getTable()->getName()),
+            $this->quoteIdentifier($fk->getName())
+        );
+    }
+
+    /**
+     * Builds the DDL SQL to drop an Index.
+     *
+     * @param Index $index
+     *
+     * @return string
+     */
+    public function getDropIndexDDL(Index $index)
+    {
+        $pattern = "
+DROP INDEX %s;
+";
+
+        return sprintf($pattern, $this->quoteIdentifier($index->getName()));
+    }
+
+    /**
+     * Builds the DDL SQL to rename a column
+     *
+     * @return string
+     */
+    public function getRenameColumnDDL($fromColumn, $toColumn)
+    {
+        $pattern = "
+ALTER TABLE %s RENAME COLUMN %s TO %s;
+";
+
+        return sprintf($pattern,
+            $this->quoteIdentifier($fromColumn->getTable()->getName()),
+            $this->quoteIdentifier($fromColumn->getName()),
+            $this->quoteIdentifier($toColumn->getName())
+        );
+    }
+
+    /**
+     * Builds the DDL SQL to modify a list of columns
+     *
+     * @return string
+     */
+    public function getModifyColumnsDDL($columnDiffs)
+    {
+        $lines     = [];
+        $tableName = null;
+        foreach ($columnDiffs as $columnDiff) {
+            $toColumn = $columnDiff->getToColumn();
+            if (null === $tableName) {
+                $tableName = $toColumn->getTable()->getName();
+            }
+            $lines[] = $this->getColumnDDL($toColumn);
+        }
+
+        $sep = ",
+    ";
+
+        $pattern = "
+ALTER TABLE %s MODIFY
+(
+    %s
+);
+";
+
+        return sprintf($pattern,
+            $this->quoteIdentifier($tableName),
+            implode($sep, $lines)
+        );
+    }
+
+    /**
+     * Builds the DDL SQL to remove a list of columns
+     *
+     * @return string
+     */
+    public function getAddColumnsDDL($columns)
+    {
+        $lines     = [];
+        $tableName = null;
+        foreach ($columns as $column) {
+            if (null === $tableName) {
+                $tableName = $column->getTable()->getName();
+            }
+            $lines[] = $this->getColumnDDL($column);
+        }
+
+        $sep = ",
+    ";
+
+        $pattern = "
+ALTER TABLE %s ADD
+(
+    %s
+);
+";
+
+        return sprintf($pattern, $this->quoteIdentifier($tableName), implode($sep, $lines));
+    }
+
+    /**
+     * Builds the DDL SQL to remove a column
+     *
+     * @return string
+     */
+    public function getRemoveColumnDDL(Column $column)
+    {
+        $pattern = "
+ALTER TABLE %s DROP COLUMN %s;
+";
+
+        return sprintf($pattern,
+            $this->quoteIdentifier($column->getTable()->getName()),
+            $this->quoteIdentifier($column->getName())
+        );
+    }
+
+    /**
+     * Builds the DDL SQL to add the primary key of a table.
+     *
+     * @param Table $table
+     *
+     * @return string
+     */
+    public function getAddPrimaryKeyDDL(Table $table)
+    {
+        $pattern = "
+ALTER TABLE %s ADD %s;
+";
+
+        return sprintf($pattern,
+            $this->quoteIdentifier($table->getName()),
+            $this->getPrimaryKeyDDL($table)
+        );
+    }
+
+    /**
      * Builds the DDL SQL to alter a table
      * based on a PropelTableDiff instance
      *
@@ -889,41 +1056,6 @@ ALTER TABLE %s RENAME TO %s;
     }
 
     /**
-     * Builds the DDL SQL to remove a column
-     *
-     * @return string
-     */
-    public function getRemoveColumnDDL(Column $column)
-    {
-        $pattern = "
-ALTER TABLE %s DROP COLUMN %s;
-";
-
-        return sprintf($pattern,
-            $this->quoteIdentifier($column->getTable()->getName()),
-            $this->quoteIdentifier($column->getName())
-        );
-    }
-
-    /**
-     * Builds the DDL SQL to rename a column
-     *
-     * @return string
-     */
-    public function getRenameColumnDDL($fromColumn, $toColumn)
-    {
-        $pattern = "
-ALTER TABLE %s RENAME COLUMN %s TO %s;
-";
-
-        return sprintf($pattern,
-            $this->quoteIdentifier($fromColumn->getTable()->getName()),
-            $this->quoteIdentifier($fromColumn->getName()),
-            $this->quoteIdentifier($toColumn->getName())
-        );
-    }
-
-    /**
      * Builds the DDL SQL to modify a column
      *
      * @return string
@@ -931,46 +1063,13 @@ ALTER TABLE %s RENAME COLUMN %s TO %s;
     public function getModifyColumnDDL(PropelColumnDiff $columnDiff)
     {
         $toColumn = $columnDiff->getToColumn();
-        $pattern = "
+        $pattern  = "
 ALTER TABLE %s MODIFY %s;
 ";
 
         return sprintf($pattern,
             $this->quoteIdentifier($toColumn->getTable()->getName()),
             $this->getColumnDDL($toColumn)
-        );
-    }
-
-    /**
-     * Builds the DDL SQL to modify a list of columns
-     *
-     * @return string
-     */
-    public function getModifyColumnsDDL($columnDiffs)
-    {
-        $lines = array();
-        $tableName = null;
-        foreach ($columnDiffs as $columnDiff) {
-            $toColumn = $columnDiff->getToColumn();
-            if (null === $tableName) {
-                $tableName = $toColumn->getTable()->getName();
-            }
-            $lines[] = $this->getColumnDDL($toColumn);
-        }
-
-        $sep = ",
-    ";
-
-        $pattern = "
-ALTER TABLE %s MODIFY
-(
-    %s
-);
-";
-
-        return sprintf($pattern,
-            $this->quoteIdentifier($tableName),
-            implode($sep, $lines)
         );
     }
 
@@ -992,47 +1091,6 @@ ALTER TABLE %s ADD %s;
     }
 
     /**
-     * Builds the DDL SQL to remove a list of columns
-     *
-     * @return string
-     */
-    public function getAddColumnsDDL($columns)
-    {
-        $lines = array();
-        $tableName = null;
-        foreach ($columns as $column) {
-            if (null === $tableName) {
-                $tableName = $column->getTable()->getName();
-            }
-            $lines[] = $this->getColumnDDL($column);
-        }
-
-        $sep = ",
-    ";
-
-        $pattern = "
-ALTER TABLE %s ADD
-(
-    %s
-);
-";
-
-        return sprintf($pattern, $this->quoteIdentifier($tableName), implode($sep, $lines));
-    }
-
-    /**
-     * Returns if the RDBMS-specific SQL type has a size attribute.
-     *
-     * @param string $sqlType the SQL type
-     *
-     * @return boolean True if the type has a size attribute
-     */
-    public function hasSize($sqlType)
-    {
-        return true;
-    }
-
-    /**
      * Returns if the RDBMS-specific SQL type has a scale attribute.
      *
      * @param string $sqlType the SQL type
@@ -1042,49 +1100,6 @@ ALTER TABLE %s ADD
     public function hasScale($sqlType)
     {
         return true;
-    }
-
-    /**
-     * Quote and escape needed characters in the string for underlying RDBMS.
-     *
-     * @param string $text
-     *
-     * @return string
-     */
-    public function quote($text)
-    {
-        if ($con = $this->getConnection()) {
-            return $con->quote($text);
-        } else {
-            return "'" . $this->disconnectedEscapeText($text) . "'";
-        }
-    }
-
-    /**
-     * Method to escape text when no connection has been set.
-     *
-     * The subclasses can implement this using string replacement functions
-     * or native DB methods.
-     *
-     * @param string $text Text that needs to be escaped.
-     *
-     * @return string
-     */
-    protected function disconnectedEscapeText($text)
-    {
-        return str_replace("'", "''", $text);
-    }
-
-    /**
-     * Quotes identifiers used in database SQL.
-     *
-     * @param string $text
-     *
-     * @return string Quoted identifier.
-     */
-    public function quoteIdentifier($text)
-    {
-        return $this->isIdentifierQuotingEnabled ? '"' . strtr($text, array('.' => '"."')) . '"' : $text;
     }
 
     public function setIdentifierQuoting($enabled = true)
@@ -1150,47 +1165,6 @@ ALTER TABLE %s ADD
     }
 
     /**
-     * Returns the boolean value for the RDBMS.
-     *
-     * This value should match the boolean value that is set
-     * when using Propel's PreparedStatement::setBoolean().
-     *
-     * This function is used to set default column values when building
-     * SQL.
-     *
-     * @param mixed $tf A boolean or string representation of boolean ('y', 'true').
-     *
-     * @return mixed
-     */
-    public function getBooleanString($b)
-    {
-        $b = ($b === true || strtolower($b) === 'true' || $b === 1 || $b === '1' || strtolower($b) === 'y' || strtolower($b) === 'yes');
-
-        return ($b ? '1' : '0');
-    }
-
-    public function getPhpArrayString($stringValue)
-    {
-        $stringValue = trim($stringValue);
-
-        if (empty($stringValue)) {
-            return null;
-        }
-
-        $values = array();
-        foreach (explode(',', $stringValue) as $v) {
-            $values[] = trim($v);
-        }
-
-        $value = implode($values, ' | ');
-        if (empty($value) || ' | ' === $value) {
-            return null;
-        }
-
-        return $this->quote(sprintf('||%s||', $value));
-    }
-
-    /**
      * Gets the preferred timestamp formatter for setting date/time values.
      *
      * @return string
@@ -1227,7 +1201,7 @@ ALTER TABLE %s ADD
      */
     public function getColumnBindingPHP($column, $identifier, $columnValueAccessor, $tab = "			")
     {
-        $script = '';
+        $script              = '';
         $hasValuePreparation = false;
         if ($column->isTemporalType()) {
             // nothing special, the internal value was already properly formatted by the setter
@@ -1244,7 +1218,7 @@ if (is_resource($columnValueAccessor)) {
             "
 \$stmt->bindValue(%s, %s, %s);",
             $identifier,
-            $columnValueAccessor ,
+            $columnValueAccessor,
             PropelTypes::getPdoTypeString($column->getType())
         );
 
@@ -1275,11 +1249,37 @@ if (is_resource($columnValueAccessor)) {
 
     public function getDefaultFKOnDeleteBehavior()
     {
-      return ForeignKey::NONE;
+        return ForeignKey::NONE;
     }
 
     public function getDefaultFKOnUpdateBehavior()
     {
-      return ForeignKey::NONE;
+        return ForeignKey::NONE;
+    }
+
+    /**
+     * Gets a specific propel (renamed) property from the build.
+     *
+     * @param string $name
+     *
+     * @return mixed
+     */
+    protected function getBuildProperty($name)
+    {
+        if ($this->generatorConfig !== null) {
+            return $this->generatorConfig->getBuildProperty($name);
+        }
+
+        return null;
+    }
+
+    /**
+     * Adds a mapping entry for specified Domain.
+     *
+     * @param Domain $domain
+     */
+    protected function setSchemaDomainMapping(Domain $domain)
+    {
+        $this->schemaDomainMap[$domain->getType()] = $domain;
     }
 }

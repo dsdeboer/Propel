@@ -55,214 +55,6 @@ CREATE SCHEMA %s;
         };
     }
 
-    public function getDropTableDDL(Table $table)
-    {
-        $ret     = '';
-        $ret     .= $this->getUseSchemaDDL($table);
-        $pattern = "
-DROP TABLE IF EXISTS %s CASCADE;
-";
-        $ret     .= sprintf($pattern, $this->quoteIdentifier($table->getName()));
-        $ret     .= $this->getDropSequenceDDL($table);
-        $ret     .= $this->getResetSchemaDDL($table);
-
-        return $ret;
-    }
-
-    public function getUseSchemaDDL(Table $table)
-    {
-        $vi = $table->getVendorInfoForType('pgsql');
-        if ($vi->hasParameter('schema')) {
-            $pattern = "
-SET search_path TO %s;
-";
-
-            return sprintf($pattern, $this->quoteIdentifier($vi->getParameter('schema')));
-        }
-    }
-
-    protected function getDropSequenceDDL(Table $table)
-    {
-        if ($table->getIdMethod() == IDMethod::NATIVE && $table->getIdMethodParameters() != null) {
-            $pattern = "
-DROP SEQUENCE %s;
-";
-
-            return sprintf($pattern,
-                $this->quoteIdentifier(strtolower($this->getSequenceName($table)))
-            );
-        }
-    }
-
-    public function getResetSchemaDDL(Table $table)
-    {
-        $vi = $table->getVendorInfoForType('pgsql');
-        if ($vi->hasParameter('schema')) {
-            return "
-SET search_path TO public;
-";
-        }
-    }
-
-    public function getAddTableDDL(Table $table)
-    {
-        $ret = '';
-        $ret .= $this->getUseSchemaDDL($table);
-        $ret .= $this->getAddSequenceDDL($table);
-
-        $lines = [];
-
-        foreach ($table->getColumns() as $column) {
-            $lines[] = $this->getColumnDDL($column);
-        }
-
-        if ($table->hasPrimaryKey()) {
-            $lines[] = $this->getPrimaryKeyDDL($table);
-        }
-
-        foreach ($table->getUnices() as $unique) {
-            $lines[] = $this->getUniqueDDL($unique);
-        }
-
-        $sep     = ",
-    ";
-        $pattern = "
-CREATE TABLE %s
-(
-    %s
-);
-";
-        $ret     .= sprintf($pattern,
-            $this->quoteIdentifier($table->getName()),
-            implode($sep, $lines)
-        );
-
-        if ($table->hasDescription()) {
-            $pattern = "
-COMMENT ON TABLE %s IS %s;
-";
-            $ret     .= sprintf($pattern,
-                $this->quoteIdentifier($table->getName()),
-                $this->quote($table->getDescription())
-            );
-        }
-
-        $ret .= $this->getAddColumnsComments($table);
-        $ret .= $this->getResetSchemaDDL($table);
-
-        return $ret;
-    }
-
-    protected function getAddSequenceDDL(Table $table)
-    {
-        if ($table->getIdMethod() == IDMethod::NATIVE && $table->getIdMethodParameters() != null) {
-            $pattern = "
-CREATE SEQUENCE %s;
-";
-
-            return sprintf($pattern,
-                $this->quoteIdentifier(strtolower($this->getSequenceName($table)))
-            );
-        }
-    }
-
-    /**
-     * Override to provide sequence names that conform to postgres' standard when
-     * no id-method-parameter specified.
-     *
-     * @param Table $table
-     *
-     * @return string
-     */
-    public function getSequenceName(Table $table)
-    {
-        static $longNamesMap = [];
-        $result = null;
-        if ($table->getIdMethod() == IDMethod::NATIVE) {
-            $idMethodParams = $table->getIdMethodParameters();
-            if (empty($idMethodParams)) {
-                $result = null;
-                // We're going to ignore a check for max length (mainly
-                // because I'm not sure how Postgres would handle this w/ SERIAL anyway)
-                foreach ($table->getColumns() as $col) {
-                    if ($col->isAutoIncrement()) {
-                        $result = $table->getName() . '_' . $col->getName() . '_seq';
-                        break; // there's only one auto-increment column allowed
-                    }
-                }
-            } else {
-                $result = $idMethodParams[0]->getValue();
-            }
-        }
-
-        return $result;
-    }
-
-    public function getColumnDDL(Column $col)
-    {
-        $domain = $col->getDomain();
-
-        $ddl     = [$this->quoteIdentifier($col->getName())];
-        $sqlType = $domain->getSqlType();
-        $table   = $col->getTable();
-        if ($col->isAutoIncrement() && $table && $table->getIdMethodParameters() == null) {
-            $sqlType = $col->getType() === PropelTypes::BIGINT ? 'bigserial' : 'serial';
-        }
-        if ($this->hasSize($sqlType) && $col->isDefaultSqlType($this)) {
-            $ddl[] = $sqlType . $domain->printSize();
-        } else {
-            $ddl[] = $sqlType;
-        }
-        if ($default = $this->getColumnDefaultValueDDL($col)) {
-            $ddl[] = $default;
-        }
-        if ($notNull = $this->getNullString($col->isNotNull())) {
-            $ddl[] = $notNull;
-        }
-        if ($autoIncrement = $col->getAutoIncrementString()) {
-            $ddl[] = $autoIncrement;
-        }
-
-        return implode(' ', $ddl);
-    }
-
-    public function hasSize($sqlType)
-    {
-        return !("BYTEA" == $sqlType || "TEXT" == $sqlType || "DOUBLE PRECISION" == $sqlType);
-    }
-
-    public function getUniqueDDL(Unique $unique)
-    {
-        return sprintf('CONSTRAINT %s UNIQUE (%s)',
-            $this->quoteIdentifier($unique->getName()),
-            $this->getColumnListDDL($unique->getColumns())
-        );
-    }
-
-    protected function getAddColumnsComments(Table $table)
-    {
-        $ret = '';
-        foreach ($table->getColumns() as $column) {
-            $ret .= $this->getAddColumnComment($column);
-        }
-
-        return $ret;
-    }
-
-    protected function getAddColumnComment(Column $column)
-    {
-        $pattern = "
-COMMENT ON COLUMN %s.%s IS %s;
-";
-        if ($description = $column->getDescription()) {
-            return sprintf($pattern,
-                $this->quoteIdentifier($column->getTable()->getName()),
-                $this->quoteIdentifier($column->getName()),
-                $this->quote($description)
-            );
-        }
-    }
-
     public function getPrimaryKeyName(Table $table)
     {
         $tableName = $table->getName();
@@ -362,6 +154,11 @@ ALTER TABLE %s ALTER COLUMN %s;
         return $ret;
     }
 
+    public function hasSize($sqlType)
+    {
+        return !("BYTEA" == $sqlType || "TEXT" == $sqlType || "DOUBLE PRECISION" == $sqlType);
+    }
+
     /**
      * Overrides the implementation from DefaultPlatform
      *
@@ -454,18 +251,6 @@ ALTER TABLE %s ALTER COLUMN %s;
         return $ret;
     }
 
-    private function getAddTriggersDDL($table)
-    {
-        if (($test = $table->getBehavior('timestampable')) === null || $test->getParameter('disable_updated_at') == 'true') {
-            return '';
-        }
-        $ret = PHP_EOL . "CREATE TRIGGER set_timestamp
-        BEFORE UPDATE ON {$table->getName()}
-        FOR EACH ROW
-        EXECUTE PROCEDURE {$table->getSchema()}.trigger_set_timestamp();" . PHP_EOL;
-        return $ret;
-    }
-
     public function getAddSchemasDDL(Database $database)
     {
         $ret     = '';
@@ -504,6 +289,221 @@ BEGIN
     RETURN NEW
 END
 $body$ LANGUAGE plpgsql;', $schemaName) . PHP_EOL;
+    }
+
+    public function getDropTableDDL(Table $table)
+    {
+        $ret     = '';
+        $ret     .= $this->getUseSchemaDDL($table);
+        $pattern = "
+DROP TABLE IF EXISTS %s CASCADE;
+";
+        $ret     .= sprintf($pattern, $this->quoteIdentifier($table->getName()));
+        $ret     .= $this->getDropSequenceDDL($table);
+        $ret     .= $this->getResetSchemaDDL($table);
+
+        return $ret;
+    }
+
+    public function getUseSchemaDDL(Table $table)
+    {
+        $vi = $table->getVendorInfoForType('pgsql');
+        if ($vi->hasParameter('schema')) {
+            $pattern = "
+SET search_path TO %s;
+";
+
+            return sprintf($pattern, $this->quoteIdentifier($vi->getParameter('schema')));
+        }
+    }
+
+    protected function getDropSequenceDDL(Table $table)
+    {
+        if ($table->getIdMethod() == IDMethod::NATIVE && $table->getIdMethodParameters() != null) {
+            $pattern = "
+DROP SEQUENCE %s;
+";
+
+            return sprintf($pattern,
+                $this->quoteIdentifier(strtolower($this->getSequenceName($table)))
+            );
+        }
+    }
+
+    /**
+     * Override to provide sequence names that conform to postgres' standard when
+     * no id-method-parameter specified.
+     *
+     * @param Table $table
+     *
+     * @return string
+     */
+    public function getSequenceName(Table $table)
+    {
+        static $longNamesMap = [];
+        $result = null;
+        if ($table->getIdMethod() == IDMethod::NATIVE) {
+            $idMethodParams = $table->getIdMethodParameters();
+            if (empty($idMethodParams)) {
+                $result = null;
+                // We're going to ignore a check for max length (mainly
+                // because I'm not sure how Postgres would handle this w/ SERIAL anyway)
+                foreach ($table->getColumns() as $col) {
+                    if ($col->isAutoIncrement()) {
+                        $result = $table->getName() . '_' . $col->getName() . '_seq';
+                        break; // there's only one auto-increment column allowed
+                    }
+                }
+            } else {
+                $result = $idMethodParams[0]->getValue();
+            }
+        }
+
+        return $result;
+    }
+
+    public function getResetSchemaDDL(Table $table)
+    {
+        $vi = $table->getVendorInfoForType('pgsql');
+        if ($vi->hasParameter('schema')) {
+            return "
+SET search_path TO public;
+";
+        }
+    }
+
+    public function getAddTableDDL(Table $table)
+    {
+        $ret = '';
+        $ret .= $this->getUseSchemaDDL($table);
+        $ret .= $this->getAddSequenceDDL($table);
+
+        $lines = [];
+
+        foreach ($table->getColumns() as $column) {
+            $lines[] = $this->getColumnDDL($column);
+        }
+
+        if ($table->hasPrimaryKey()) {
+            $lines[] = $this->getPrimaryKeyDDL($table);
+        }
+
+        foreach ($table->getUnices() as $unique) {
+            $lines[] = $this->getUniqueDDL($unique);
+        }
+
+        $sep     = ",
+    ";
+        $pattern = "
+CREATE TABLE %s
+(
+    %s
+);
+";
+        $ret     .= sprintf($pattern,
+            $this->quoteIdentifier($table->getName()),
+            implode($sep, $lines)
+        );
+
+        if ($table->hasDescription()) {
+            $pattern = "
+COMMENT ON TABLE %s IS %s;
+";
+            $ret     .= sprintf($pattern,
+                $this->quoteIdentifier($table->getName()),
+                $this->quote($table->getDescription())
+            );
+        }
+
+        $ret .= $this->getAddColumnsComments($table);
+        $ret .= $this->getResetSchemaDDL($table);
+
+        return $ret;
+    }
+
+    protected function getAddSequenceDDL(Table $table)
+    {
+        if ($table->getIdMethod() == IDMethod::NATIVE && $table->getIdMethodParameters() != null) {
+            $pattern = "
+CREATE SEQUENCE %s;
+";
+
+            return sprintf($pattern,
+                $this->quoteIdentifier(strtolower($this->getSequenceName($table)))
+            );
+        }
+    }
+
+    public function getColumnDDL(Column $col)
+    {
+        $domain = $col->getDomain();
+
+        $ddl     = [$this->quoteIdentifier($col->getName())];
+        $sqlType = $domain->getSqlType();
+        $table   = $col->getTable();
+        if ($col->isAutoIncrement() && $table && $table->getIdMethodParameters() == null) {
+            $sqlType = $col->getType() === PropelTypes::BIGINT ? 'bigserial' : 'serial';
+        }
+        if ($this->hasSize($sqlType) && $col->isDefaultSqlType($this)) {
+            $ddl[] = $sqlType . $domain->printSize();
+        } else {
+            $ddl[] = $sqlType;
+        }
+        if ($default = $this->getColumnDefaultValueDDL($col)) {
+            $ddl[] = $default;
+        }
+        if ($notNull = $this->getNullString($col->isNotNull())) {
+            $ddl[] = $notNull;
+        }
+        if ($autoIncrement = $col->getAutoIncrementString()) {
+            $ddl[] = $autoIncrement;
+        }
+
+        return implode(' ', $ddl);
+    }
+
+    public function getUniqueDDL(Unique $unique)
+    {
+        return sprintf('CONSTRAINT %s UNIQUE (%s)',
+            $this->quoteIdentifier($unique->getName()),
+            $this->getColumnListDDL($unique->getColumns())
+        );
+    }
+
+    protected function getAddColumnsComments(Table $table)
+    {
+        $ret = '';
+        foreach ($table->getColumns() as $column) {
+            $ret .= $this->getAddColumnComment($column);
+        }
+
+        return $ret;
+    }
+
+    protected function getAddColumnComment(Column $column)
+    {
+        $pattern = "
+COMMENT ON COLUMN %s.%s IS %s;
+";
+        if ($description = $column->getDescription()) {
+            return sprintf($pattern,
+                $this->quoteIdentifier($column->getTable()->getName()),
+                $this->quoteIdentifier($column->getName()),
+                $this->quote($description)
+            );
+        }
+    }
+
+    private function getAddTriggersDDL($table)
+    {
+        if (($test = $table->getBehavior('timestampable')) === null || $test->getParameter('disable_updated_at') == 'true') {
+            return '';
+        }
+        $ret = PHP_EOL . "CREATE TRIGGER set_timestamp
+        BEFORE UPDATE ON {$table->getName()}
+        FOR EACH ROW
+        EXECUTE PROCEDURE {$table->getSchema()}.trigger_set_timestamp();" . PHP_EOL;
+        return $ret;
     }
 
     /**

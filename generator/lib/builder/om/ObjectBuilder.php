@@ -33,6 +33,39 @@ abstract class ObjectBuilder extends OMBuilder
     }
 
     /**
+     * Checks whether any registered behavior on that table has a modifier for a hook
+     *
+     * @param string $hookName The name of the hook as called from one of this class methods, e.g. "preSave"
+     *
+     * @return boolean
+     */
+    public function hasBehaviorModifier($hookName, $modifier = null)
+    {
+        return parent::hasBehaviorModifier($hookName, 'ObjectBuilderModifier');
+    }
+
+    /**
+     * Checks whether any registered behavior on that table has a modifier for a hook
+     *
+     * @param string $hookName The name of the hook as called from one of this class methods, e.g. "preSave"
+     * @param string &$script The script will be modified in this method.
+     */
+    public function applyBehaviorModifier($hookName, &$script, $tab = "		")
+    {
+        return $this->applyBehaviorModifierBase($hookName, 'ObjectBuilderModifier', $script, $tab);
+    }
+
+    /**
+     * Checks whether any registered behavior content creator on that table exists a contentName
+     *
+     * @param string $contentName The name of the content as called from one of this class methods, e.g. "parentClassname"
+     */
+    public function getBehaviorContent($contentName)
+    {
+        return $this->getBehaviorContentBase($contentName, 'ObjectBuilderModifier');
+    }
+
+    /**
      * This method adds the contents of the generated class to the script.
      *
      * This method is abstract and should be overridden by the subclasses.
@@ -111,7 +144,6 @@ abstract class ObjectBuilder extends OMBuilder
         }
     }
 
-
     /**
      * Gets the baseClass path if specified for table/db.
      * If not, will return 'propel.om.BaseObject'
@@ -186,38 +218,5 @@ abstract class ObjectBuilder extends OMBuilder
         }
 
         return false;
-    }
-
-    /**
-     * Checks whether any registered behavior on that table has a modifier for a hook
-     *
-     * @param string $hookName The name of the hook as called from one of this class methods, e.g. "preSave"
-     *
-     * @return boolean
-     */
-    public function hasBehaviorModifier($hookName, $modifier = null)
-    {
-        return parent::hasBehaviorModifier($hookName, 'ObjectBuilderModifier');
-    }
-
-    /**
-     * Checks whether any registered behavior on that table has a modifier for a hook
-     *
-     * @param string $hookName The name of the hook as called from one of this class methods, e.g. "preSave"
-     * @param string &$script  The script will be modified in this method.
-     */
-    public function applyBehaviorModifier($hookName, &$script, $tab = "		")
-    {
-        return $this->applyBehaviorModifierBase($hookName, 'ObjectBuilderModifier', $script, $tab);
-    }
-
-    /**
-     * Checks whether any registered behavior content creator on that table exists a contentName
-     *
-     * @param string $contentName The name of the content as called from one of this class methods, e.g. "parentClassname"
-     */
-    public function getBehaviorContent($contentName)
-    {
-        return $this->getBehaviorContentBase($contentName, 'ObjectBuilderModifier');
     }
 }

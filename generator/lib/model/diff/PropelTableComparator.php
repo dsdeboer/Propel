@@ -31,56 +31,11 @@ class PropelTableComparator
         $this->tableDiff = (null === $tableDiff) ? new PropelTableDiff() : $tableDiff;
     }
 
-    public function getTableDiff()
-    {
-        return $this->tableDiff;
-    }
-
-    /**
-     * Set the table the comparator starts from
-     *
-     * @param Table $fromTable
-     */
-    public function setFromTable(Table $fromTable)
-    {
-        $this->tableDiff->setFromTable($fromTable);
-    }
-
-    /**
-     * Get the table the comparator starts from
-     *
-     * @return Table
-     */
-    public function getFromTable()
-    {
-        return $this->tableDiff->getFromTable();
-    }
-
-    /**
-     * Set the table the comparator goes to
-     *
-     * @param Table $toTable
-     */
-    public function setToTable(Table $toTable)
-    {
-        $this->tableDiff->setToTable($toTable);
-    }
-
-    /**
-     * Get the table the comparator goes to
-     *
-     * @return Table
-     */
-    public function getToTable()
-    {
-        return $this->tableDiff->getToTable();
-    }
-
     /**
      * Compute and return the difference between two table objects
      *
-     * @param Table   $fromTable
-     * @param Table   $toTable
+     * @param Table $fromTable
+     * @param Table $toTable
      * @param boolean $caseInsensitive Whether the comparison is case insensitive.
      *                                 False by default.
      *
@@ -101,6 +56,26 @@ class PropelTableComparator
     }
 
     /**
+     * Set the table the comparator starts from
+     *
+     * @param Table $fromTable
+     */
+    public function setFromTable(Table $fromTable)
+    {
+        $this->tableDiff->setFromTable($fromTable);
+    }
+
+    /**
+     * Set the table the comparator goes to
+     *
+     * @param Table $toTable
+     */
+    public function setToTable(Table $toTable)
+    {
+        $this->tableDiff->setToTable($toTable);
+    }
+
+    /**
      * Compare the columns of the fromTable and the toTable,
      * and modifies the inner tableDiff if necessary.
      * Returns the number of differences.
@@ -112,8 +87,8 @@ class PropelTableComparator
      */
     public function compareColumns($caseInsensitive = false)
     {
-        $fromTableColumns = $this->getFromTable()->getColumns();
-        $toTableColumns = $this->getToTable()->getColumns();
+        $fromTableColumns  = $this->getFromTable()->getColumns();
+        $toTableColumns    = $this->getToTable()->getColumns();
         $columnDifferences = 0;
 
         // check for new columns in $toTable
@@ -135,7 +110,7 @@ class PropelTableComparator
         // check for column differences
         foreach ($fromTableColumns as $fromColumn) {
             if ($this->getToTable()->hasColumn($fromColumn->getName(), $caseInsensitive)) {
-                $toColumn = $this->getToTable()->getColumn($fromColumn->getName(), $caseInsensitive);
+                $toColumn   = $this->getToTable()->getColumn($fromColumn->getName(), $caseInsensitive);
                 $columnDiff = PropelColumnComparator::computeDiff($fromColumn, $toColumn);
                 if ($columnDiff) {
                     $this->tableDiff->addModifiedColumn($fromColumn->getName(), $columnDiff);
@@ -163,6 +138,26 @@ class PropelTableComparator
     }
 
     /**
+     * Get the table the comparator starts from
+     *
+     * @return Table
+     */
+    public function getFromTable()
+    {
+        return $this->tableDiff->getFromTable();
+    }
+
+    /**
+     * Get the table the comparator goes to
+     *
+     * @return Table
+     */
+    public function getToTable()
+    {
+        return $this->tableDiff->getToTable();
+    }
+
+    /**
      * Compare the primary keys of the fromTable and the toTable,
      * and modifies the inner tableDiff if necessary.
      * Returns the number of differences.
@@ -175,12 +170,13 @@ class PropelTableComparator
     public function comparePrimaryKeys($caseInsensitive = false)
     {
         $pkDifferences = 0;
-        $fromTablePk = $this->getFromTable()->getPrimaryKey();
-        $toTablePk = $this->getToTable()->getPrimaryKey();
+        $fromTablePk   = $this->getFromTable()->getPrimaryKey();
+        $toTablePk     = $this->getToTable()->getPrimaryKey();
 
         // check for new pk columns in $toTable
         foreach ($toTablePk as $column) {
-            if (!$this->getFromTable()->hasColumn($column->getName(), $caseInsensitive) || !$this->getFromTable()->getColumn($column->getName(), $caseInsensitive)->isPrimaryKey()) {
+            if (!$this->getFromTable()->hasColumn($column->getName(), $caseInsensitive) || !$this->getFromTable()->getColumn($column->getName(),
+                    $caseInsensitive)->isPrimaryKey()) {
                 $this->tableDiff->addAddedPkColumn($column->getName(), $column);
                 $pkDifferences++;
             }
@@ -226,7 +222,7 @@ class PropelTableComparator
     {
         $indexDifferences = 0;
         $fromTableIndices = array_merge($this->getFromTable()->getIndices(), $this->getFromTable()->getUnices());
-        $toTableIndices = array_merge($this->getToTable()->getIndices(), $this->getToTable()->getUnices());
+        $toTableIndices   = array_merge($this->getToTable()->getIndices(), $this->getToTable()->getUnices());
 
         foreach ($toTableIndices as $toTableIndexPos => $toTableIndex) {
             foreach ($fromTableIndices as $fromTableIndexPos => $fromTableIndex) {
@@ -274,8 +270,8 @@ class PropelTableComparator
     public function compareForeignKeys($caseInsensitive = false)
     {
         $fkDifferences = 0;
-        $fromTableFks = $this->getFromTable()->getForeignKeys();
-        $toTableFks = $this->getToTable()->getForeignKeys();
+        $fromTableFks  = $this->getFromTable()->getForeignKeys();
+        $toTableFks    = $this->getToTable()->getForeignKeys();
 
         foreach ($fromTableFks as $fromTableFkPos => $fromTableFk) {
             foreach ($toTableFks as $toTableFkPos => $toTableFk) {
@@ -312,5 +308,10 @@ class PropelTableComparator
         }
 
         return $fkDifferences;
+    }
+
+    public function getTableDiff()
+    {
+        return $this->tableDiff;
     }
 }

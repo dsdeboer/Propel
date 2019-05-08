@@ -28,20 +28,6 @@ class Inheritance extends XMLElement
     private $parent;
 
     /**
-     * Sets up the Inheritance object based on the attributes that were passed to loadFromXML().
-     *
-     * @see        parent::loadFromXML()
-     */
-    protected function setupObject()
-    {
-        // Clean key from special characters not allowed in constant names
-        $this->key = rtrim(preg_replace('/(\W|_)+/', '_', $this->getAttribute("key")), '_');
-        $this->className = $this->getAttribute("class");
-        $this->pkg = $this->getAttribute("package");
-        $this->ancestor = $this->getAttribute("extends");
-    }
-
-    /**
      * Get the value of key.
      *
      * @return value of key.
@@ -155,5 +141,19 @@ class Inheritance extends XMLElement
         if ($this->ancestor !== null) {
             $inherNode->setAttribute('extends', $this->ancestor);
         }
+    }
+
+    /**
+     * Sets up the Inheritance object based on the attributes that were passed to loadFromXML().
+     *
+     * @see        parent::loadFromXML()
+     */
+    protected function setupObject()
+    {
+        // Clean key from special characters not allowed in constant names
+        $this->key       = rtrim(preg_replace('/(\W|_)+/', '_', $this->getAttribute("key")), '_');
+        $this->className = $this->getAttribute("class");
+        $this->pkg       = $this->getAttribute("package");
+        $this->ancestor  = $this->getAttribute("extends");
     }
 }

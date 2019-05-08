@@ -20,9 +20,9 @@
 class SoftDeleteBehavior extends Behavior
 {
     // default parameters value
-    protected $parameters = array(
+    protected $parameters = [
         'deleted_column' => 'deleted_at',
-    );
+    ];
 
     /**
      * Add the deleted_column to the current table
@@ -30,22 +30,17 @@ class SoftDeleteBehavior extends Behavior
     public function modifyTable()
     {
         if (!$this->getTable()->containsColumn($this->getParameter('deleted_column'))) {
-            $this->getTable()->addColumn(array(
+            $this->getTable()->addColumn([
                 'name' => $this->getParameter('deleted_column'),
                 'type' => 'TIMESTAMP'
-            ));
+            ]);
         }
-    }
-
-    protected function getColumnSetter()
-    {
-        return 'set' . $this->getColumnForParameter('deleted_column')->getPhpName();
     }
 
     public function objectMethods($builder)
     {
         $this->builder = $builder;
-        $script = '';
+        $script        = '';
         $this->addObjectForceDelete($script);
         $this->addObjectUndelete($script);
 
@@ -55,7 +50,7 @@ class SoftDeleteBehavior extends Behavior
     public function addObjectForceDelete(&$script)
     {
         $peerClassName = $this->builder->getPeerClassname();
-        $script .= "
+        $script        .= "
 /**
  * Bypass the soft_delete behavior and force a hard delete of the current object
  */
@@ -87,6 +82,11 @@ public function unDelete(PropelPDO \$con = null)
     return \$this->save(\$con);
 }
 ";
+    }
+
+    protected function getColumnSetter()
+    {
+        return 'set' . $this->getColumnForParameter('deleted_column')->getPhpName();
     }
 
     public function preDelete($builder)
@@ -129,7 +129,7 @@ protected \$localSoftDelete = true;
     public function queryMethods($builder)
     {
         $this->builder = $builder;
-        $script = '';
+        $script        = '';
         $this->addQueryIncludeDeleted($script);
         $this->addQuerySoftDelete($script);
         $this->addQueryForceDelete($script);
@@ -295,7 +295,7 @@ EOT;
     {
         $builder->declareClassFromBuilder($builder->getStubQueryBuilder());
         $this->builder = $builder;
-        $script = '';
+        $script        = '';
         $this->addPeerEnableSoftDelete($script);
         $this->addPeerDisableSoftDelete($script);
         $this->addPeerIsSoftDeleteEnabled($script);
@@ -376,7 +376,7 @@ public static function doSoftDelete(\$values, PropelPDO \$con = null)
     } else {
         // it must be the primary key
         \$selectCriteria = new Criteria(self::DATABASE_NAME);";
-        $pks = $this->getTable()->getPrimaryKey();
+        $pks    = $this->getTable()->getPrimaryKey();
         if (count($pks) > 1) {
             $i = 0;
             foreach ($pks as $col) {
@@ -385,7 +385,7 @@ public static function doSoftDelete(\$values, PropelPDO \$con = null)
                 $i++;
             }
         } else {
-            $col = $pks[0];
+            $col    = $pks[0];
             $script .= "
          \$selectCriteria->add({$this->builder->getColumnConstant($col)}, (array) \$values, Criteria::IN);";
         }
@@ -485,16 +485,16 @@ EOT;
 
     public function peerFilter(&$script)
     {
-        $script = str_replace(array(
+        $script = str_replace([
             'public static function doDelete(',
             'public static function doDelete2(',
             'public static function doDeleteAll(',
             'public static function doDeleteAll2('
-        ), array(
+        ], [
             'public static function doForceDelete(',
             'public static function doDelete(',
             'public static function doForceDeleteAll(',
             'public static function doDeleteAll('
-        ), $script);
+        ], $script);
     }
 }

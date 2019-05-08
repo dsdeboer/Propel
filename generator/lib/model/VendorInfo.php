@@ -33,7 +33,7 @@ class VendorInfo extends XMLElement
      *
      * @var        array
      */
-    private $parameters = array();
+    private $parameters = [];
 
     /**
      * Creates a new VendorInfo instance.
@@ -46,43 +46,13 @@ class VendorInfo extends XMLElement
     }
 
     /**
-     * Sets up this object based on the attributes that were passed to loadFromXML().
-     *
-     * @see        parent::loadFromXML()
-     */
-    protected function setupObject()
-    {
-        $this->type = $this->getAttribute("type");
-    }
-
-    /**
-     * Set RDBMS type for this vendor-specific info.
-     *
-     * @param string $v
-     */
-    public function setType($v)
-    {
-        $this->type = $v;
-    }
-
-    /**
-     * Get RDBMS type for this vendor-specific info.
-     *
-     * @return string
-     */
-    public function getType()
-    {
-        return $this->type;
-    }
-
-    /**
      * Adds a new vendor parameter to this object.
      *
      * @param array $attrib Attributes from XML.
      */
     public function addParameter($attrib)
     {
-        $name = $attrib["name"];
+        $name                    = $attrib["name"];
         $this->parameters[$name] = $attrib["value"];
     }
 
@@ -90,7 +60,7 @@ class VendorInfo extends XMLElement
      * Sets parameter value.
      *
      * @param string $name
-     * @param mixed  $value The value for the parameter.
+     * @param mixed $value The value for the parameter.
      */
     public function setParameter($name, $value)
     {
@@ -126,26 +96,6 @@ class VendorInfo extends XMLElement
     }
 
     /**
-     * Sets assoc array of parameters for vendor specific info.
-     *
-     * @param array $params Parameter data.
-     */
-    public function setParameters(array $params = array())
-    {
-        $this->parameters = $params;
-    }
-
-    /**
-     * Gets assoc array of parameters for venfor specific info.
-     *
-     * @return array
-     */
-    public function getParameters()
-    {
-        return $this->parameters;
-    }
-
-    /**
      * Tests whether this vendor info is empty
      *
      * @return boolean
@@ -165,10 +115,50 @@ class VendorInfo extends XMLElement
     public function getMergedVendorInfo(VendorInfo $merge)
     {
         $newParams = array_merge($this->getParameters(), $merge->getParameters());
-        $newInfo = new VendorInfo($this->getType());
+        $newInfo   = new VendorInfo($this->getType());
         $newInfo->setParameters($newParams);
 
         return $newInfo;
+    }
+
+    /**
+     * Gets assoc array of parameters for venfor specific info.
+     *
+     * @return array
+     */
+    public function getParameters()
+    {
+        return $this->parameters;
+    }
+
+    /**
+     * Sets assoc array of parameters for vendor specific info.
+     *
+     * @param array $params Parameter data.
+     */
+    public function setParameters(array $params = [])
+    {
+        $this->parameters = $params;
+    }
+
+    /**
+     * Get RDBMS type for this vendor-specific info.
+     *
+     * @return string
+     */
+    public function getType()
+    {
+        return $this->type;
+    }
+
+    /**
+     * Set RDBMS type for this vendor-specific info.
+     *
+     * @param string $v
+     */
+    public function setType($v)
+    {
+        $this->type = $v;
     }
 
     /**
@@ -187,5 +177,15 @@ class VendorInfo extends XMLElement
             $parameterNode->setAttribute("value", $value);
             $vendorNode->appendChild($parameterNode);
         }
+    }
+
+    /**
+     * Sets up this object based on the attributes that were passed to loadFromXML().
+     *
+     * @see        parent::loadFromXML()
+     */
+    protected function setupObject()
+    {
+        $this->type = $this->getAttribute("type");
     }
 }

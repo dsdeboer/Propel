@@ -49,7 +49,7 @@ class PhpNameGenerator implements NameGenerator
     public function generateName($inputs)
     {
         $schemaName = $inputs[0];
-        $method = $inputs[1];
+        $method     = $inputs[1];
 
         if (count($inputs) > 2) {
             $prefix = $inputs[2];
@@ -79,35 +79,6 @@ class PhpNameGenerator implements NameGenerator
     }
 
     /**
-     * Converts a database schema name to php object name by Camelization.
-     * Removes <code>STD_SEPARATOR_CHAR</code>, capitilizes first letter
-     * of name and each letter after the <code>STD_SEPERATOR</code>,
-     * converts the rest of the letters to lowercase.
-     *
-     * This method should be named camelizeMethod() for clarity
-     *
-     * my_CLASS_name -> MyClassName
-     *
-     * @param string $schemaName name to be converted.
-     *
-     * @return string Converted name.
-     *
-     * @see        NameGenerator
-     * @see        #underscoreMethod()
-     */
-    protected function underscoreMethod($schemaName)
-    {
-        $name = "";
-        $tok = strtok($schemaName, self::STD_SEPARATOR_CHAR);
-        while ($tok !== false) {
-            $name .= ucfirst(strtolower($tok));
-            $tok = strtok(self::STD_SEPARATOR_CHAR);
-        }
-
-        return $name;
-    }
-
-    /**
      * Converts a database schema name to php object name.  Removes
      * any character that is not a letter or a number and capitilizes
      * first letter of the name, the first letter of each alphanumeric
@@ -124,9 +95,9 @@ class PhpNameGenerator implements NameGenerator
      */
     protected function cleanMethod($schemaName)
     {
-        $name = "";
-        $regexp = '/([a-z0-9]+)/i';
-        $matches = array();
+        $name    = "";
+        $regexp  = '/([a-z0-9]+)/i';
+        $matches = [];
         if (preg_match_all($regexp, $schemaName, $matches)) {
             foreach ($matches[1] AS $tok) {
                 $name .= ucfirst(strtolower($tok));
@@ -155,10 +126,10 @@ class PhpNameGenerator implements NameGenerator
     protected function phpnameMethod($schemaName)
     {
         $name = "";
-        $tok = strtok($schemaName, self::STD_SEPARATOR_CHAR);
+        $tok  = strtok($schemaName, self::STD_SEPARATOR_CHAR);
         while ($tok !== false) {
             $name .= ucfirst($tok);
-            $tok = strtok(self::STD_SEPARATOR_CHAR);
+            $tok  = strtok(self::STD_SEPARATOR_CHAR);
         }
 
         return $name;
@@ -174,6 +145,35 @@ class PhpNameGenerator implements NameGenerator
      */
     protected function nochangeMethod($name)
     {
+        return $name;
+    }
+
+    /**
+     * Converts a database schema name to php object name by Camelization.
+     * Removes <code>STD_SEPARATOR_CHAR</code>, capitilizes first letter
+     * of name and each letter after the <code>STD_SEPERATOR</code>,
+     * converts the rest of the letters to lowercase.
+     *
+     * This method should be named camelizeMethod() for clarity
+     *
+     * my_CLASS_name -> MyClassName
+     *
+     * @param string $schemaName name to be converted.
+     *
+     * @return string Converted name.
+     *
+     * @see        NameGenerator
+     * @see        #underscoreMethod()
+     */
+    protected function underscoreMethod($schemaName)
+    {
+        $name = "";
+        $tok  = strtok($schemaName, self::STD_SEPARATOR_CHAR);
+        while ($tok !== false) {
+            $name .= ucfirst(strtolower($tok));
+            $tok  = strtok(self::STD_SEPARATOR_CHAR);
+        }
+
         return $name;
     }
 }

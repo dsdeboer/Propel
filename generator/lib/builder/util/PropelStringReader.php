@@ -57,7 +57,7 @@ class PropelStringReader extends Reader
             if ($this->currPos >= strlen($this->_string)) {
                 return -1;
             }
-            $out = substr($this->_string, $this->currPos, $len);
+            $out           = substr($this->_string, $this->currPos, $len);
             $this->currPos += $len;
 
             return $out;

@@ -18,213 +18,229 @@
 class PropelTypes
 {
 
-    const CHAR = "CHAR";
-    const VARCHAR = "VARCHAR";
-    const LONGVARCHAR = "LONGVARCHAR";
-    const CLOB = "CLOB";
-    const CLOB_EMU = "CLOB_EMU";
-    const NUMERIC = "NUMERIC";
-    const DECIMAL = "DECIMAL";
-    const TINYINT = "TINYINT";
-    const SMALLINT = "SMALLINT";
-    const INTEGER = "INTEGER";
-    const BIGINT = "BIGINT";
-    const REAL = "REAL";
-    const FLOAT = "FLOAT";
-    const DOUBLE = "DOUBLE";
-    const BINARY = "BINARY";
-    const VARBINARY = "VARBINARY";
+    const CHAR          = "CHAR";
+    const VARCHAR       = "VARCHAR";
+    const LONGVARCHAR   = "LONGVARCHAR";
+    const CLOB          = "CLOB";
+    const CLOB_EMU      = "CLOB_EMU";
+    const NUMERIC       = "NUMERIC";
+    const DECIMAL       = "DECIMAL";
+    const TINYINT       = "TINYINT";
+    const SMALLINT      = "SMALLINT";
+    const INTEGER       = "INTEGER";
+    const BIGINT        = "BIGINT";
+    const REAL          = "REAL";
+    const FLOAT         = "FLOAT";
+    const DOUBLE        = "DOUBLE";
+    const BINARY        = "BINARY";
+    const VARBINARY     = "VARBINARY";
     const LONGVARBINARY = "LONGVARBINARY";
-    const BLOB = "BLOB";
-    const DATE = "DATE";
-    const TIME = "TIME";
-    const TIMESTAMP = "TIMESTAMP";
-    const BU_DATE = "BU_DATE";
-    const BU_TIMESTAMP = "BU_TIMESTAMP";
-    const BOOLEAN = "BOOLEAN";
-    const BOOLEAN_EMU = "BOOLEAN_EMU";
-    const OBJECT = "OBJECT";
-    const PHP_ARRAY = "ARRAY";
-    const ENUM = "ENUM";
-
-    private static $TEXT_TYPES = array(
-        self::CHAR, self::VARCHAR, self::LONGVARCHAR, self::CLOB, self::DATE, self::TIME, self::TIMESTAMP, self::BU_DATE, self::BU_TIMESTAMP
-    );
-
-    private static $LOB_TYPES = array(
-        self::VARBINARY, self::LONGVARBINARY, self::BLOB
-    );
-
-    private static $TEMPORAL_TYPES = array(
-        self::DATE, self::TIME, self::TIMESTAMP, self::BU_DATE, self::BU_TIMESTAMP
-    );
-
-    private static $NUMERIC_TYPES = array(
-        self::SMALLINT, self::TINYINT, self::INTEGER, self::BIGINT, self::FLOAT, self::DOUBLE, self::NUMERIC, self::DECIMAL, self::REAL
-    );
-
-    private static $BOOLEAN_TYPES = array(
-        self::BOOLEAN, self::BOOLEAN_EMU
-    );
-
-    const CHAR_NATIVE_TYPE = "string";
-    const VARCHAR_NATIVE_TYPE = "string";
-    const LONGVARCHAR_NATIVE_TYPE = "string";
-    const CLOB_NATIVE_TYPE = "string";
-    const CLOB_EMU_NATIVE_TYPE = "resource";
-    const NUMERIC_NATIVE_TYPE = "string";
-    const DECIMAL_NATIVE_TYPE = "string";
-    const TINYINT_NATIVE_TYPE = "int";
-    const SMALLINT_NATIVE_TYPE = "int";
-    const INTEGER_NATIVE_TYPE = "int";
-    const BIGINT_NATIVE_TYPE = "string";
-    const REAL_NATIVE_TYPE = "double";
-    const FLOAT_NATIVE_TYPE = "double";
-    const DOUBLE_NATIVE_TYPE = "double";
-    const BINARY_NATIVE_TYPE = "string";
-    const VARBINARY_NATIVE_TYPE = "string";
+    const BLOB          = "BLOB";
+    const DATE          = "DATE";
+    const TIME          = "TIME";
+    const TIMESTAMP     = "TIMESTAMP";
+    const BU_DATE       = "BU_DATE";
+    const BU_TIMESTAMP  = "BU_TIMESTAMP";
+    const BOOLEAN       = "BOOLEAN";
+    const BOOLEAN_EMU   = "BOOLEAN_EMU";
+    const OBJECT        = "OBJECT";
+    const PHP_ARRAY     = "ARRAY";
+    const ENUM          = "ENUM";
+    const CHAR_NATIVE_TYPE          = "string";
+    const VARCHAR_NATIVE_TYPE       = "string";
+    const LONGVARCHAR_NATIVE_TYPE   = "string";
+    const CLOB_NATIVE_TYPE          = "string";
+    const CLOB_EMU_NATIVE_TYPE      = "resource";
+    const NUMERIC_NATIVE_TYPE       = "string";
+    const DECIMAL_NATIVE_TYPE       = "string";
+    const TINYINT_NATIVE_TYPE       = "int";
+    const SMALLINT_NATIVE_TYPE      = "int";
+    const INTEGER_NATIVE_TYPE       = "int";
+    const BIGINT_NATIVE_TYPE        = "string";
+    const REAL_NATIVE_TYPE          = "double";
+    const FLOAT_NATIVE_TYPE         = "double";
+    const DOUBLE_NATIVE_TYPE        = "double";
+    const BINARY_NATIVE_TYPE        = "string";
+    const VARBINARY_NATIVE_TYPE     = "string";
     const LONGVARBINARY_NATIVE_TYPE = "string";
-    const BLOB_NATIVE_TYPE = "resource";
-    const BU_DATE_NATIVE_TYPE = "string";
-    const DATE_NATIVE_TYPE = "string";
-    const TIME_NATIVE_TYPE = "string";
-    const TIMESTAMP_NATIVE_TYPE = "string";
-    const BU_TIMESTAMP_NATIVE_TYPE = "string";
-    const BOOLEAN_NATIVE_TYPE = "boolean";
-    const BOOLEAN_EMU_NATIVE_TYPE = "boolean";
-    const OBJECT_NATIVE_TYPE = "";
-    const PHP_ARRAY_NATIVE_TYPE = "array";
-    const ENUM_NATIVE_TYPE = "int";
-
+    const BLOB_NATIVE_TYPE          = "resource";
+    const BU_DATE_NATIVE_TYPE       = "string";
+    const DATE_NATIVE_TYPE          = "string";
+    const TIME_NATIVE_TYPE          = "string";
+    const TIMESTAMP_NATIVE_TYPE     = "string";
+    const BU_TIMESTAMP_NATIVE_TYPE  = "string";
+    const BOOLEAN_NATIVE_TYPE       = "boolean";
+    const BOOLEAN_EMU_NATIVE_TYPE   = "boolean";
+    const OBJECT_NATIVE_TYPE        = "";
+    const PHP_ARRAY_NATIVE_TYPE     = "array";
+    const ENUM_NATIVE_TYPE          = "int";
+    private static $TEXT_TYPES = [
+        self::CHAR,
+        self::VARCHAR,
+        self::LONGVARCHAR,
+        self::CLOB,
+        self::DATE,
+        self::TIME,
+        self::TIMESTAMP,
+        self::BU_DATE,
+        self::BU_TIMESTAMP
+    ];
+    private static $LOB_TYPES = [
+        self::VARBINARY,
+        self::LONGVARBINARY,
+        self::BLOB
+    ];
+    private static $TEMPORAL_TYPES = [
+        self::DATE,
+        self::TIME,
+        self::TIMESTAMP,
+        self::BU_DATE,
+        self::BU_TIMESTAMP
+    ];
+    private static $NUMERIC_TYPES = [
+        self::SMALLINT,
+        self::TINYINT,
+        self::INTEGER,
+        self::BIGINT,
+        self::FLOAT,
+        self::DOUBLE,
+        self::NUMERIC,
+        self::DECIMAL,
+        self::REAL
+    ];
+    private static $BOOLEAN_TYPES = [
+        self::BOOLEAN,
+        self::BOOLEAN_EMU
+    ];
     /**
      * Mapping between Propel types and PHP native types.
      *
      * @var        array
      */
-    private static $propelToPHPNativeMap = array(
-            self::CHAR => self::CHAR_NATIVE_TYPE,
-            self::VARCHAR => self::VARCHAR_NATIVE_TYPE,
-            self::LONGVARCHAR => self::LONGVARCHAR_NATIVE_TYPE,
-            self::CLOB => self::CLOB_NATIVE_TYPE,
-            self::CLOB_EMU => self::CLOB_EMU_NATIVE_TYPE,
-            self::NUMERIC => self::NUMERIC_NATIVE_TYPE,
-            self::DECIMAL => self::DECIMAL_NATIVE_TYPE,
-            self::TINYINT => self::TINYINT_NATIVE_TYPE,
-            self::SMALLINT => self::SMALLINT_NATIVE_TYPE,
-            self::INTEGER => self::INTEGER_NATIVE_TYPE,
-            self::BIGINT => self::BIGINT_NATIVE_TYPE,
-            self::REAL => self::REAL_NATIVE_TYPE,
-            self::FLOAT => self::FLOAT_NATIVE_TYPE,
-            self::DOUBLE => self::DOUBLE_NATIVE_TYPE,
-            self::BINARY => self::BINARY_NATIVE_TYPE,
-            self::VARBINARY => self::VARBINARY_NATIVE_TYPE,
-            self::LONGVARBINARY => self::LONGVARBINARY_NATIVE_TYPE,
-            self::BLOB => self::BLOB_NATIVE_TYPE,
-            self::DATE => self::DATE_NATIVE_TYPE,
-            self::BU_DATE => self::BU_DATE_NATIVE_TYPE,
-            self::TIME => self::TIME_NATIVE_TYPE,
-            self::TIMESTAMP => self::TIMESTAMP_NATIVE_TYPE,
-            self::BU_TIMESTAMP => self::BU_TIMESTAMP_NATIVE_TYPE,
-            self::BOOLEAN => self::BOOLEAN_NATIVE_TYPE,
-            self::BOOLEAN_EMU => self::BOOLEAN_EMU_NATIVE_TYPE,
-            self::OBJECT => self::OBJECT_NATIVE_TYPE,
-            self::PHP_ARRAY => self::PHP_ARRAY_NATIVE_TYPE,
-            self::ENUM => self::ENUM_NATIVE_TYPE,
-    );
+    private static $propelToPHPNativeMap = [
+        self::CHAR          => self::CHAR_NATIVE_TYPE,
+        self::VARCHAR       => self::VARCHAR_NATIVE_TYPE,
+        self::LONGVARCHAR   => self::LONGVARCHAR_NATIVE_TYPE,
+        self::CLOB          => self::CLOB_NATIVE_TYPE,
+        self::CLOB_EMU      => self::CLOB_EMU_NATIVE_TYPE,
+        self::NUMERIC       => self::NUMERIC_NATIVE_TYPE,
+        self::DECIMAL       => self::DECIMAL_NATIVE_TYPE,
+        self::TINYINT       => self::TINYINT_NATIVE_TYPE,
+        self::SMALLINT      => self::SMALLINT_NATIVE_TYPE,
+        self::INTEGER       => self::INTEGER_NATIVE_TYPE,
+        self::BIGINT        => self::BIGINT_NATIVE_TYPE,
+        self::REAL          => self::REAL_NATIVE_TYPE,
+        self::FLOAT         => self::FLOAT_NATIVE_TYPE,
+        self::DOUBLE        => self::DOUBLE_NATIVE_TYPE,
+        self::BINARY        => self::BINARY_NATIVE_TYPE,
+        self::VARBINARY     => self::VARBINARY_NATIVE_TYPE,
+        self::LONGVARBINARY => self::LONGVARBINARY_NATIVE_TYPE,
+        self::BLOB          => self::BLOB_NATIVE_TYPE,
+        self::DATE          => self::DATE_NATIVE_TYPE,
+        self::BU_DATE       => self::BU_DATE_NATIVE_TYPE,
+        self::TIME          => self::TIME_NATIVE_TYPE,
+        self::TIMESTAMP     => self::TIMESTAMP_NATIVE_TYPE,
+        self::BU_TIMESTAMP  => self::BU_TIMESTAMP_NATIVE_TYPE,
+        self::BOOLEAN       => self::BOOLEAN_NATIVE_TYPE,
+        self::BOOLEAN_EMU   => self::BOOLEAN_EMU_NATIVE_TYPE,
+        self::OBJECT        => self::OBJECT_NATIVE_TYPE,
+        self::PHP_ARRAY     => self::PHP_ARRAY_NATIVE_TYPE,
+        self::ENUM          => self::ENUM_NATIVE_TYPE,
+    ];
 
     /**
      * Mapping between Propel types and Creole types (for rev-eng task)
      *
      * @var        array
      */
-    private static $propelTypeToCreoleTypeMap = array(
+    private static $propelTypeToCreoleTypeMap = [
 
-            self::CHAR => self::CHAR,
-            self::VARCHAR => self::VARCHAR,
-            self::LONGVARCHAR => self::LONGVARCHAR,
-            self::CLOB => self::CLOB,
-            self::NUMERIC => self::NUMERIC,
-            self::DECIMAL => self::DECIMAL,
-            self::TINYINT => self::TINYINT,
-            self::SMALLINT => self::SMALLINT,
-            self::INTEGER => self::INTEGER,
-            self::BIGINT => self::BIGINT,
-            self::REAL => self::REAL,
-            self::FLOAT => self::FLOAT,
-            self::DOUBLE => self::DOUBLE,
-            self::BINARY => self::BINARY,
-            self::VARBINARY => self::VARBINARY,
-            self::LONGVARBINARY => self::LONGVARBINARY,
-            self::BLOB => self::BLOB,
-            self::DATE => self::DATE,
-            self::TIME => self::TIME,
-            self::TIMESTAMP => self::TIMESTAMP,
-            self::BOOLEAN => self::BOOLEAN,
-            self::BOOLEAN_EMU => self::BOOLEAN_EMU,
-            self::OBJECT => self::OBJECT,
-            self::PHP_ARRAY => self::PHP_ARRAY,
-            self::ENUM => self::ENUM,
-            // These are pre-epoch dates, which we need to map to String type
-            // since they cannot be properly handled using strtotime() -- or even numeric
-            // timestamps on Windows.
-            self::BU_DATE => self::VARCHAR,
-            self::BU_TIMESTAMP => self::VARCHAR,
+        self::CHAR          => self::CHAR,
+        self::VARCHAR       => self::VARCHAR,
+        self::LONGVARCHAR   => self::LONGVARCHAR,
+        self::CLOB          => self::CLOB,
+        self::NUMERIC       => self::NUMERIC,
+        self::DECIMAL       => self::DECIMAL,
+        self::TINYINT       => self::TINYINT,
+        self::SMALLINT      => self::SMALLINT,
+        self::INTEGER       => self::INTEGER,
+        self::BIGINT        => self::BIGINT,
+        self::REAL          => self::REAL,
+        self::FLOAT         => self::FLOAT,
+        self::DOUBLE        => self::DOUBLE,
+        self::BINARY        => self::BINARY,
+        self::VARBINARY     => self::VARBINARY,
+        self::LONGVARBINARY => self::LONGVARBINARY,
+        self::BLOB          => self::BLOB,
+        self::DATE          => self::DATE,
+        self::TIME          => self::TIME,
+        self::TIMESTAMP     => self::TIMESTAMP,
+        self::BOOLEAN       => self::BOOLEAN,
+        self::BOOLEAN_EMU   => self::BOOLEAN_EMU,
+        self::OBJECT        => self::OBJECT,
+        self::PHP_ARRAY     => self::PHP_ARRAY,
+        self::ENUM          => self::ENUM,
+        // These are pre-epoch dates, which we need to map to String type
+        // since they cannot be properly handled using strtotime() -- or even numeric
+        // timestamps on Windows.
+        self::BU_DATE       => self::VARCHAR,
+        self::BU_TIMESTAMP  => self::VARCHAR,
 
-    );
+    ];
 
     /**
      * Mapping between Propel types and PDO type constants (for prepared statement setting).
      *
      * @var        array
      */
-    private static $propelTypeToPDOTypeMap = array(
-            self::CHAR => PDO::PARAM_STR,
-            self::VARCHAR => PDO::PARAM_STR,
-            self::LONGVARCHAR => PDO::PARAM_STR,
-            self::CLOB => PDO::PARAM_STR,
-            self::CLOB_EMU => PDO::PARAM_STR,
-            self::NUMERIC => PDO::PARAM_INT,
-            self::DECIMAL => PDO::PARAM_STR,
-            self::TINYINT => PDO::PARAM_INT,
-            self::SMALLINT => PDO::PARAM_INT,
-            self::INTEGER => PDO::PARAM_INT,
-            self::BIGINT => PDO::PARAM_STR,
-            self::REAL => PDO::PARAM_STR,
-            self::FLOAT => PDO::PARAM_STR,
-            self::DOUBLE => PDO::PARAM_STR,
-            self::BINARY => PDO::PARAM_STR,
-            self::VARBINARY => PDO::PARAM_LOB,
-            self::LONGVARBINARY => PDO::PARAM_LOB,
-            self::BLOB => PDO::PARAM_LOB,
-            self::DATE => PDO::PARAM_STR,
-            self::TIME => PDO::PARAM_STR,
-            self::TIMESTAMP => PDO::PARAM_STR,
-            self::BOOLEAN => PDO::PARAM_BOOL,
-            self::BOOLEAN_EMU => PDO::PARAM_INT,
-            self::OBJECT => PDO::PARAM_STR,
-            self::PHP_ARRAY => PDO::PARAM_STR,
-            self::ENUM => PDO::PARAM_INT,
+    private static $propelTypeToPDOTypeMap = [
+        self::CHAR          => PDO::PARAM_STR,
+        self::VARCHAR       => PDO::PARAM_STR,
+        self::LONGVARCHAR   => PDO::PARAM_STR,
+        self::CLOB          => PDO::PARAM_STR,
+        self::CLOB_EMU      => PDO::PARAM_STR,
+        self::NUMERIC       => PDO::PARAM_INT,
+        self::DECIMAL       => PDO::PARAM_STR,
+        self::TINYINT       => PDO::PARAM_INT,
+        self::SMALLINT      => PDO::PARAM_INT,
+        self::INTEGER       => PDO::PARAM_INT,
+        self::BIGINT        => PDO::PARAM_STR,
+        self::REAL          => PDO::PARAM_STR,
+        self::FLOAT         => PDO::PARAM_STR,
+        self::DOUBLE        => PDO::PARAM_STR,
+        self::BINARY        => PDO::PARAM_STR,
+        self::VARBINARY     => PDO::PARAM_LOB,
+        self::LONGVARBINARY => PDO::PARAM_LOB,
+        self::BLOB          => PDO::PARAM_LOB,
+        self::DATE          => PDO::PARAM_STR,
+        self::TIME          => PDO::PARAM_STR,
+        self::TIMESTAMP     => PDO::PARAM_STR,
+        self::BOOLEAN       => PDO::PARAM_BOOL,
+        self::BOOLEAN_EMU   => PDO::PARAM_INT,
+        self::OBJECT        => PDO::PARAM_STR,
+        self::PHP_ARRAY     => PDO::PARAM_STR,
+        self::ENUM          => PDO::PARAM_INT,
 
-            // These are pre-epoch dates, which we need to map to String type
-            // since they cannot be properly handled using strtotime() -- or even numeric
-            // timestamps on Windows.
-            self::BU_DATE => PDO::PARAM_STR,
-            self::BU_TIMESTAMP => PDO::PARAM_STR,
-    );
+        // These are pre-epoch dates, which we need to map to String type
+        // since they cannot be properly handled using strtotime() -- or even numeric
+        // timestamps on Windows.
+        self::BU_DATE       => PDO::PARAM_STR,
+        self::BU_TIMESTAMP  => PDO::PARAM_STR,
+    ];
 
-    private static $pdoTypeNames = array(
+    private static $pdoTypeNames = [
         PDO::PARAM_BOOL => 'PDO::PARAM_BOOL',
         PDO::PARAM_NULL => 'PDO::PARAM_NULL',
         PDO::PARAM_INT  => 'PDO::PARAM_INT',
         PDO::PARAM_STR  => 'PDO::PARAM_STR',
         PDO::PARAM_LOB  => 'PDO::PARAM_LOB',
-    );
+    ];
 
     /**
      * Return native PHP type which corresponds to the
      * Creole type provided. Use in the base object class generation.
      *
-     * @param  string $propelType The Propel type name.
+     * @param string $propelType The Propel type name.
      * @return string Name of the native PHP type
      */
     public static function getPhpNative($propelType)
@@ -350,18 +366,6 @@ class PropelTypes
     }
 
     /**
-     * Convenience method to indicate whether a passed-in PHP type is a primitive.
-     *
-     * @param string $phpType The PHP type to check
-     *
-     * @return boolean Whether the PHP type is a primitive (string, int, boolean, float)
-     */
-    public static function isPhpPrimitiveType($phpType)
-    {
-        return in_array($phpType, array("boolean", "int", "double", "float", "string"));
-    }
-
-    /**
      * Convenience method to indicate whether a passed-in PHP type is a numeric primitive.
      *
      * @param string $phpType The PHP type to check
@@ -370,7 +374,7 @@ class PropelTypes
      */
     public static function isPhpPrimitiveNumericType($phpType)
     {
-        return in_array($phpType, array("boolean", "int", "double", "float"));
+        return in_array($phpType, ["boolean", "int", "double", "float"]);
     }
 
     /**
@@ -382,7 +386,19 @@ class PropelTypes
      */
     public static function isPhpObjectType($phpType)
     {
-        return (!self::isPhpPrimitiveType($phpType) && !in_array($phpType, array("resource", "array")));
+        return (!self::isPhpPrimitiveType($phpType) && !in_array($phpType, ["resource", "array"]));
+    }
+
+    /**
+     * Convenience method to indicate whether a passed-in PHP type is a primitive.
+     *
+     * @param string $phpType The PHP type to check
+     *
+     * @return boolean Whether the PHP type is a primitive (string, int, boolean, float)
+     */
+    public static function isPhpPrimitiveType($phpType)
+    {
+        return in_array($phpType, ["boolean", "int", "double", "float", "string"]);
     }
 
     /**

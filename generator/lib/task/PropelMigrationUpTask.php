@@ -53,8 +53,8 @@ class PropelMigrationUpTask extends BasePropelMigrationTask
                 $datasource,
                 $connection['dsn']
             ), Project::MSG_VERBOSE);
-            $pdo = $manager->getPdoConnection($datasource);
-            $res = 0;
+            $pdo        = $manager->getPdoConnection($datasource);
+            $res        = 0;
             $statements = PropelSQLParser::parseString($sql);
             foreach ($statements as $statement) {
                 try {

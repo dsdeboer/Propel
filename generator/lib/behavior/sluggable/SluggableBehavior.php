@@ -19,7 +19,7 @@
 class SluggableBehavior extends Behavior
 {
     // default parameters value
-    protected $parameters = array(
+    protected $parameters = [
         'add_cleanup'     => 'true',
         'slug_column'     => 'slug',
         'slug_pattern'    => '',
@@ -28,7 +28,7 @@ class SluggableBehavior extends Behavior
         'separator'       => '-',
         'permanent'       => 'false',
         'scope_column'    => ''
-    );
+    ];
 
     /**
      * Add the slug_column to the current table
@@ -36,11 +36,11 @@ class SluggableBehavior extends Behavior
     public function modifyTable()
     {
         if (!$this->getTable()->containsColumn($this->getParameter('slug_column'))) {
-            $this->getTable()->addColumn(array(
+            $this->getTable()->addColumn([
                 'name' => $this->getParameter('slug_column'),
                 'type' => 'VARCHAR',
                 'size' => 255
-            ));
+            ]);
             // add a unique to column
             $unique = new Unique($this->getColumnForParameter('slug_column'));
             $unique->setName($this->getTable()->getCommonName() . '_slug');
@@ -50,6 +50,57 @@ class SluggableBehavior extends Behavior
             }
             $this->getTable()->addUnique($unique);
         }
+    }
+
+    /**
+     * Add code in ObjectBuilder::preSave
+     *
+     * @return string The code to put at the hook
+     */
+    public function preSave(PHP5ObjectBuilder $builder)
+    {
+        $const   = $builder->getColumnConstant($this->getColumnForParameter('slug_column'));
+        $pattern = $this->getParameter('slug_pattern');
+        $script  = "
+if (\$this->isColumnModified($const) && \$this->{$this->getColumnGetter()}()) {
+    \$this->{$this->getColumnSetter()}(\$this->makeSlugUnique(\$this->{$this->getColumnGetter()}()));";
+
+        if ($pattern && false === $this->booleanValue($this->getParameter('permanent'))) {
+            $script .= "
+} elseif (";
+            $count  = preg_match_all('/{([a-zA-Z]+)}/', $pattern, $matches, PREG_PATTERN_ORDER);
+
+            foreach ($matches[1] as $key => $match) {
+                $columnName = $this->underscore(ucfirst($match));
+                $column     = $this->getTable()->getColumn($columnName);
+                if ((null == $column) && $this->getTable()->hasBehavior('symfony_i18n')) {
+                    $i18n   = $this->getTable()->getBehavior('symfony_i18n');
+                    $column = $i18n->getI18nTable()->getColumn($columnName);
+                }
+                if (null == $column) {
+                    throw new \InvalidArgumentException(sprintf('The pattern %s is invalid  the column %s is not found', $pattern, $match));
+                }
+                $columnConst = $builder->getColumnConstant($column);
+                $script      .= "\$this->isColumnModified($columnConst)" . ($key < $count - 1 ? " || " : "");
+            }
+
+            $script .= ") {
+    \$this->{$this->getColumnSetter()}(\$this->createSlug());";
+        }
+
+        if (null == $pattern && false === $this->booleanValue($this->getParameter('permanent'))) {
+            $script .= "
+} else {
+    \$this->{$this->getColumnSetter()}(\$this->createSlug());
+}";
+        } else {
+            $script .= "
+} elseif (!\$this->{$this->getColumnGetter()}()) {
+    \$this->{$this->getColumnSetter()}(\$this->createSlug());
+}";
+        }
+
+        return $script;
     }
 
     /**
@@ -73,60 +124,19 @@ class SluggableBehavior extends Behavior
     }
 
     /**
-     * Add code in ObjectBuilder::preSave
+     * @param string $string
      *
-     * @return string The code to put at the hook
+     * @return string
      */
-    public function preSave(PHP5ObjectBuilder $builder)
+    protected function underscore($string)
     {
-        $const = $builder->getColumnConstant($this->getColumnForParameter('slug_column'));
-        $pattern = $this->getParameter('slug_pattern');
-        $script = "
-if (\$this->isColumnModified($const) && \$this->{$this->getColumnGetter()}()) {
-    \$this->{$this->getColumnSetter()}(\$this->makeSlugUnique(\$this->{$this->getColumnGetter()}()));";
-
-        if ($pattern && false === $this->booleanValue($this->getParameter('permanent'))) {
-            $script .= "
-} elseif (";
-            $count = preg_match_all('/{([a-zA-Z]+)}/', $pattern, $matches, PREG_PATTERN_ORDER);
-
-            foreach ($matches[1] as $key => $match) {
-                $columnName = $this->underscore(ucfirst($match));
-                $column = $this->getTable()->getColumn($columnName);
-                if ((null == $column) && $this->getTable()->hasBehavior('symfony_i18n')) {
-                    $i18n = $this->getTable()->getBehavior('symfony_i18n');
-                    $column = $i18n->getI18nTable()->getColumn($columnName);
-                }
-                if (null == $column) {
-                    throw new \InvalidArgumentException(sprintf('The pattern %s is invalid  the column %s is not found', $pattern, $match));
-                }
-                $columnConst = $builder->getColumnConstant($column);
-                $script .= "\$this->isColumnModified($columnConst)" . ($key < $count - 1 ? " || " : "");
-            }
-
-            $script .= ") {
-    \$this->{$this->getColumnSetter()}(\$this->createSlug());";
-        }
-
-        if (null == $pattern && false === $this->booleanValue($this->getParameter('permanent'))) {
-            $script .= "
-} else {
-    \$this->{$this->getColumnSetter()}(\$this->createSlug());
-}";
-        } else {
-            $script .= "
-} elseif (!\$this->{$this->getColumnGetter()}()) {
-    \$this->{$this->getColumnSetter()}(\$this->createSlug());
-}";
-        }
-
-        return $script;
+        return strtolower(preg_replace(['/([A-Z]+)([A-Z][a-z])/', '/([a-z\d])([A-Z])/'], ['\\1_\\2', '\\1_\\2'], strtr($string, '_', '.')));
     }
 
     public function objectMethods(PHP5ObjectBuilder $builder)
     {
         $this->builder = $builder;
-        $script = '';
+        $script        = '';
         if ('slug' != $this->getParameter('slug_column')) {
             $this->addSlugSetter($script);
             $this->addSlugGetter($script);
@@ -195,7 +205,7 @@ protected function createSlug()
     protected function addCreateRawSlug(&$script)
     {
         $pattern = $this->getParameter('slug_pattern');
-        $script .= "
+        $script  .= "
 /**
  * Create the slug from the appropriate columns
  *
@@ -205,7 +215,7 @@ protected function createRawSlug()
 {
     ";
         if ($pattern) {
-            $script .= "return '" . str_replace(array('{', '}'), array('\' . $this->cleanupSlugPart($this->get', '()) . \''), $pattern) . "';";
+            $script .= "return '" . str_replace(['{', '}'], ['\' . $this->cleanupSlugPart($this->get', '()) . \''], $pattern) . "';";
         } else {
             $script .= "return \$this->cleanupSlugPart(\$this->__toString());";
         }
@@ -261,7 +271,7 @@ protected static function cleanupSlugPart(\$slug, \$replacement = '" . $this->ge
 
     public function addLimitSlugSize(&$script)
     {
-        $size = $this->getColumnForParameter('slug_column')->getSize();
+        $size   = $this->getColumnForParameter('slug_column')->getSize();
         $script .= "
 
 /**
@@ -318,7 +328,7 @@ protected function makeSlugUnique(\$slug, \$separator = '" . $this->getParameter
         }";
         }
 
-        $script .= "
+        $script   .= "
     }
 
      \$query = " . $this->builder->getStubQueryBuilder()->getClassname() . "::create('q')
@@ -334,11 +344,11 @@ protected function makeSlugUnique(\$slug, \$separator = '" . $this->getParameter
             $script .= "->where('q." . $this->getColumnForParameter('slug_column')->getPhpName() . " ' . (\$alreadyExists ? 'REGEXP' : '=') . ' ?', \$alreadyExists ? '^' . \$slug2 . '[0-9]+$' : \$slug2)";
         }
 
-        $script .="->prune(\$this)";
+        $script .= "->prune(\$this)";
 
         if ($this->getParameter('scope_column')) {
             $scopeGetter = 'get' . $this->getColumnForParameter('scope_column')->getPhpName();
-            $script .= "
+            $script      .= "
             ->filterBy('{$this->getColumnForParameter('scope_column')->getPhpName()}', \$this->{$scopeGetter}())";
         }
         // watch out: some of the columns may be hidden by the soft_delete behavior
@@ -382,7 +392,7 @@ protected function makeSlugUnique(\$slug, \$separator = '" . $this->getParameter
     public function queryMethods(QueryBuilder $builder)
     {
         $this->builder = $builder;
-        $script = '';
+        $script        = '';
 
         if ($this->getParameter('slug_column') != 'slug') {
             $this->addFilterBySlug($script);
@@ -425,15 +435,5 @@ public function findOneBySlug(\$slug, \$con = null)
     return \$this->filterBySlug(\$slug)->findOne(\$con);
 }
 ";
-    }
-
-    /**
-     * @param string $string
-     *
-     * @return string
-     */
-    protected function underscore($string)
-    {
-        return strtolower(preg_replace(array('/([A-Z]+)([A-Z][a-z])/', '/([a-z\d])([A-Z])/'), array('\\1_\\2', '\\1_\\2'), strtr($string, '_', '.')));
     }
 }

@@ -46,50 +46,7 @@ class SortableBehaviorObjectBuilderModifier
     public function __construct($behavior)
     {
         $this->behavior = $behavior;
-        $this->table = $behavior->getTable();
-    }
-
-    protected function getParameter($key)
-    {
-        return $this->behavior->getParameter($key);
-    }
-
-    protected function getColumnAttribute($name)
-    {
-        return strtolower($this->behavior->getColumnForParameter($name)->getName());
-    }
-
-    protected function getColumnPhpName($name)
-    {
-        return $this->behavior->getColumnForParameter($name)->getPhpName();
-    }
-
-    protected function setBuilder($builder)
-    {
-        $this->builder = $builder;
-        $this->objectClassname = $builder->getStubObjectBuilder()->getClassname();
-        $this->queryClassname = $builder->getStubQueryBuilder()->getClassname();
-        $this->peerClassname = $builder->getStubPeerBuilder()->getClassname();
-    }
-
-    /**
-     * Get the getter of the column of the behavior
-     *
-     * @return string The related getter, e.g. 'getRank'
-     */
-    protected function getColumnGetter($columnName = 'rank_column')
-    {
-        return 'get' . $this->behavior->getColumnForParameter($columnName)->getPhpName();
-    }
-
-    /**
-     * Get the setter of the column of the behavior
-     *
-     * @return string The related setter, e.g. 'setRank'
-     */
-    protected function getColumnSetter($columnName = 'rank_column')
-    {
-        return 'set' . $this->behavior->getColumnForParameter($columnName)->getPhpName();
+        $this->table    = $behavior->getTable();
     }
 
     public function preSave($builder)
@@ -108,15 +65,33 @@ class SortableBehaviorObjectBuilderModifier
 ";
     }
 
+    protected function setBuilder($builder)
+    {
+        $this->builder         = $builder;
+        $this->objectClassname = $builder->getStubObjectBuilder()->getClassname();
+        $this->queryClassname  = $builder->getStubQueryBuilder()->getClassname();
+        $this->peerClassname   = $builder->getStubPeerBuilder()->getClassname();
+    }
+
+    /**
+     * Get the setter of the column of the behavior
+     *
+     * @return string The related setter, e.g. 'setRank'
+     */
+    protected function getColumnSetter($columnName = 'rank_column')
+    {
+        return 'set' . $this->behavior->getColumnForParameter($columnName)->getPhpName();
+    }
+
     public function preUpdate($builder)
     {
         if ($this->behavior->useScope()) {
             $this->setBuilder($builder);
 
-            $condition = array();
+            $condition = [];
 
             foreach ($this->behavior->getScopes() as $scope) {
-                $condition[] = "\$this->isColumnModified({$this->peerClassname}::".strtoupper($scope).")";
+                $condition[] = "\$this->isColumnModified({$this->peerClassname}::" . strtoupper($scope) . ")";
             }
 
             $condition = implode(' OR ', $condition);
@@ -130,6 +105,16 @@ if (($condition) && !\$this->isColumnModified({$this->peerClassname}::RANK_COL))
 
             return $script;
         }
+    }
+
+    /**
+     * Get the getter of the column of the behavior
+     *
+     * @return string The related getter, e.g. 'getRank'
+     */
+    protected function getColumnGetter($columnName = 'rank_column')
+    {
+        return 'get' . $this->behavior->getColumnForParameter($columnName)->getPhpName();
     }
 
     public function preDelete($builder)
@@ -152,8 +137,8 @@ if (($condition) && !\$this->isColumnModified({$this->peerClassname}::RANK_COL))
  */
 protected \$sortableQueries = array();
 ";
-    if ($this->behavior->useScope()) {
-        $script .= "
+        if ($this->behavior->useScope()) {
+            $script .= "
 /**
  * The old scope value.
  * @var        int
@@ -173,7 +158,7 @@ protected \$oldScope;
             $this->addRankAccessors($script);
         }
         if ($this->behavior->useScope() &&
-                $this->getParameter('scope_column') != 'scope_value') {
+            $this->getParameter('scope_column') != 'scope_value') {
             $this->addScopeAccessors($script);
         }
         $this->addIsFirst($script);
@@ -195,34 +180,9 @@ protected \$oldScope;
         return $script;
     }
 
-    public function objectFilter(&$script, $builder)
+    protected function getParameter($key)
     {
-        if ($this->behavior->useScope()) {
-            if ($this->behavior->hasMultipleScopes()) {
-
-                foreach ($this->behavior->getScopes() as $idx => $scope) {
-                    $name = strtolower($this->behavior->getTable()->getColumn($scope)->getName());
-
-                    $search = "if (\$this->$name !== \$v) {";
-                    $replace = $search . "
-            // sortable behavior
-            \$this->oldScope[$idx] = \$this->$name;
-";
-                    $script = str_replace($search, $replace, $script);
-                }
-
-            } else {
-                $scope = current($this->behavior->getScopes());
-                $name = strtolower($this->behavior->getTable()->getColumn($scope)->getName());
-
-                $search = "if (\$this->$name !== \$v) {";
-                $replace = $search . "
-            // sortable behavior
-            \$this->oldScope = \$this->$name;
-";
-                $script = str_replace($search, $replace, $script);
-            }
-        }
+        return $this->behavior->getParameter($key);
     }
 
     /**
@@ -256,6 +216,11 @@ public function setRank(\$v)
 ";
     }
 
+    protected function getColumnAttribute($name)
+    {
+        return strtolower($this->behavior->getColumnForParameter($name)->getName());
+    }
+
     /**
      * Get the wraps for getter/setter, if the scope column has not the default name
      *
@@ -277,30 +242,30 @@ public function getScopeValue(\$returnNulls = true)
 {
 ";
         if ($this->behavior->hasMultipleScopes()) {
-$script .= "
+            $script .= "
     \$result = array();
     \$onlyNulls = true;
 ";
             foreach ($this->behavior->getScopes() as $scopeField) {
-$script .= "
+                $script .= "
     \$onlyNulls &= null === (\$result[] = \$this->{$this->behavior->getColumnGetter($scopeField)}());
 ";
 
             }
 
-$script .= "
+            $script .= "
 
     return \$onlyNulls && \$returnNulls ? null : \$result;
 ";
         } else {
 
-$script .= "
+            $script .= "
 
     return \$this->{$this->getColumnGetter('scope_column')}();
 ";
         }
 
-$script .= "
+        $script .= "
 }
 
 /**
@@ -316,19 +281,19 @@ public function setScopeValue(\$v)
         if ($this->behavior->hasMultipleScopes()) {
 
             foreach ($this->behavior->getScopes() as $idx => $scopeField) {
-$script .= "
+                $script .= "
     \$this->{$this->behavior->getColumnSetter($scopeField)}(\$v === null ? null : \$v[$idx]);
 ";
             }
 
         } else {
-$script .= "
+            $script .= "
 
     return \$this->{$this->getColumnSetter('scope_column')}(\$v);
 ";
 
-    }
-$script .= "
+        }
+        $script .= "
 }
 ";
     }
@@ -351,7 +316,7 @@ public function isFirst()
     protected function addIsLast(&$script)
     {
         $useScope = $this->behavior->useScope();
-        $script .= "
+        $script   .= "
 /**
  * Check if the object is last in the list, i.e. if its rank is the highest rank
  *
@@ -454,7 +419,7 @@ public function getPrevious(PropelPDO \$con = null)
     protected function addInsertAtRank(&$script)
     {
         $useScope = $this->behavior->useScope();
-        $script .= "
+        $script   .= "
 /**
  * Insert at specified rank
  * The modifications are not persisted until the object is saved.
@@ -468,7 +433,7 @@ public function getPrevious(PropelPDO \$con = null)
  */
 public function insertAtRank(\$rank, PropelPDO \$con = null)
 {";
-        $script .= "
+        $script   .= "
     \$maxRank = {$this->queryClassname}::create()->getMaxRankArray(" . ($useScope ? "\$this->getScopeValue(), " : '') . "\$con);
     if (\$rank < 1 || \$rank > \$maxRank + 1) {
         throw new PropelException('Invalid rank ' . \$rank);
@@ -491,7 +456,7 @@ public function insertAtRank(\$rank, PropelPDO \$con = null)
     protected function addInsertAtBottom(&$script)
     {
         $useScope = $this->behavior->useScope();
-        $script .= "
+        $script   .= "
 /**
  * Insert in the last rank
  * The modifications are not persisted until the object is saved.
@@ -504,7 +469,7 @@ public function insertAtRank(\$rank, PropelPDO \$con = null)
  */
 public function insertAtBottom(PropelPDO \$con = null)
 {";
-        $script .= "
+        $script   .= "
     \$this->{$this->getColumnSetter()}({$this->queryClassname}::create()->getMaxRankArray(" . ($useScope ? "\$this->getScopeValue(), " : '') . "\$con) + 1);
 
     return \$this;
@@ -530,9 +495,9 @@ public function insertAtTop()
 
     protected function addMoveToRank(&$script)
     {
-        $useScope = $this->behavior->useScope();
+        $useScope      = $this->behavior->useScope();
         $peerClassname = $this->peerClassname;
-        $script .= "
+        $script        .= "
 /**
  * Move the object to a new rank, and shifts the rank
  * Of the objects inbetween the old and new rank accordingly
@@ -611,7 +576,7 @@ public function swapWith(\$object, PropelPDO \$con = null)
             \$object->setScopeValue(\$oldScope);
         }";
         }
-$script .= "
+        $script .= "
         \$oldRank = \$this->{$this->getColumnGetter()}();
         \$newRank = \$object->{$this->getColumnGetter()}();
         \$this->{$this->getColumnSetter()}(\$newRank);
@@ -719,7 +684,7 @@ public function moveToTop(PropelPDO \$con = null)
     protected function addMoveToBottom(&$script)
     {
         $useScope = $this->behavior->useScope();
-        $script .= "
+        $script   .= "
 /**
  * Move the object to the bottom of the list
  *
@@ -753,9 +718,9 @@ public function moveToBottom(PropelPDO \$con = null)
     protected function addRemoveFromList(&$script)
     {
         $useScope = $this->behavior->useScope();
-        $script .= "
+        $script   .= "
 /**
- * Removes the current object from the list".($useScope ? ' (moves it to the null scope)' : '').".
+ * Removes the current object from the list" . ($useScope ? ' (moves it to the null scope)' : '') . ".
  * The modifications are not persisted until the object is saved.
  *
  * @param     PropelPDO \$con optional connection
@@ -765,7 +730,7 @@ public function moveToBottom(PropelPDO \$con = null)
 public function removeFromList(PropelPDO \$con = null)
 {";
         if ($useScope) {
-          $script .= "
+            $script .= "
     // check if object is already removed
     if (\$this->getScopeValue() === null) {
         throw new PropelException('Object is already removed (has null scope)');
@@ -775,7 +740,7 @@ public function removeFromList(PropelPDO \$con = null)
     \$this->setScopeValue(null);
 //    \$this->insertAtBottom(\$con);";
         } else {
-        $script .= "
+            $script .= "
     // Keep the list modification query for the save() transaction
     \$this->sortableQueries []= array(
         'callable'  => array(self::PEER, 'shiftRank'),
@@ -806,5 +771,40 @@ protected function processSortableQueries(\$con)
     \$this->sortableQueries = array();
 }
 ";
+    }
+
+    public function objectFilter(&$script, $builder)
+    {
+        if ($this->behavior->useScope()) {
+            if ($this->behavior->hasMultipleScopes()) {
+
+                foreach ($this->behavior->getScopes() as $idx => $scope) {
+                    $name = strtolower($this->behavior->getTable()->getColumn($scope)->getName());
+
+                    $search  = "if (\$this->$name !== \$v) {";
+                    $replace = $search . "
+            // sortable behavior
+            \$this->oldScope[$idx] = \$this->$name;
+";
+                    $script  = str_replace($search, $replace, $script);
+                }
+
+            } else {
+                $scope = current($this->behavior->getScopes());
+                $name  = strtolower($this->behavior->getTable()->getColumn($scope)->getName());
+
+                $search  = "if (\$this->$name !== \$v) {";
+                $replace = $search . "
+            // sortable behavior
+            \$this->oldScope = \$this->$name;
+";
+                $script  = str_replace($search, $replace, $script);
+            }
+        }
+    }
+
+    protected function getColumnPhpName($name)
+    {
+        return $this->behavior->getColumnForParameter($name)->getPhpName();
     }
 }

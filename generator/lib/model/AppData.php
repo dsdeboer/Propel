@@ -25,26 +25,23 @@ class AppData
 {
 
     /**
+     * The generator configuration
+     *
+     * @var        GeneratorConfig
+     */
+    protected $generatorConfig;
+    /**
      * The list of databases for this application.
      *
      * @var        Database[]
      */
-    private $dbList = array();
-
+    private $dbList = [];
     /**
      * The platform class for our database(s).
      *
      * @var        string
      */
     private $platform;
-
-    /**
-     * The generator configuration
-     *
-     * @var        GeneratorConfig
-     */
-    protected $generatorConfig;
-
     /**
      * Name of the database. Only one database definition
      * is allowed in one XML descriptor.
@@ -71,16 +68,6 @@ class AppData
     }
 
     /**
-     * Sets the platform object to use for any databases added to this application model.
-     *
-     * @param PropelPlatformInterface $defaultPlatform
-     */
-    public function setPlatform(PropelPlatformInterface $defaultPlatform)
-    {
-        $this->platform = $defaultPlatform;
-    }
-
-    /**
      * Gets the platform object to use for any databases added to this application model.
      *
      * @return PropelPlatformInterface
@@ -91,33 +78,13 @@ class AppData
     }
 
     /**
-     * Set the generator configuration
+     * Sets the platform object to use for any databases added to this application model.
      *
-     * @param GeneratorConfigInterface $generatorConfig
+     * @param PropelPlatformInterface $defaultPlatform
      */
-    public function setGeneratorConfig(GeneratorConfigInterface $generatorConfig)
+    public function setPlatform(PropelPlatformInterface $defaultPlatform)
     {
-        $this->generatorConfig = $generatorConfig;
-    }
-
-    /**
-     * Get the generator configuration
-     *
-     * @return GeneratorConfig
-     */
-    public function getGeneratorConfig()
-    {
-        return $this->generatorConfig;
-    }
-
-    /**
-     * Set the name of the database.
-     *
-     * @param string $name
-     */
-    public function setName($name)
-    {
-        $this->name = $name;
+        $this->platform = $defaultPlatform;
     }
 
     /**
@@ -131,6 +98,16 @@ class AppData
     }
 
     /**
+     * Set the name of the database.
+     *
+     * @param string $name
+     */
+    public function setName($name)
+    {
+        $this->name = $name;
+    }
+
+    /**
      * Get the short name of the database (without the '-schema' postfix).
      *
      * @return string name
@@ -141,22 +118,6 @@ class AppData
     }
 
     /**
-     * Return an array of all databases
-     *
-     * @return Database[]
-     */
-    public function getDatabases($doFinalInit = true)
-    {
-        // this is temporary until we'll have a clean solution
-        // for packaging datamodels/requiring schemas
-        if ($doFinalInit) {
-            $this->doFinalInitialization();
-        }
-
-        return $this->dbList;
-    }
-
-    /**
      * Returns whether this application has multiple databases.
      *
      * @return boolean True if the application has multiple databases
@@ -164,97 +125,6 @@ class AppData
     public function hasMultipleDatabases()
     {
         return (count($this->dbList) > 1);
-    }
-
-    /**
-     * Return the database with the specified name.
-     *
-     * @param string $name        database name
-     * @param bool   $doFinalInit
-     *
-     * @return Database|null
-     */
-    public function getDatabase($name = null, $doFinalInit = true)
-    {
-        // this is temporary until we'll have a clean solution
-        // for packaging datamodels/requiring schemas
-        if ($doFinalInit) {
-            $this->doFinalInitialization();
-        }
-
-        if ($name === null) {
-            return $this->dbList[0];
-        }
-
-        for ($i = 0, $size = count($this->dbList); $i < $size; $i++) {
-            $db = $this->dbList[$i];
-            if ($db->getName() === $name) {
-                return $db;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Checks whether a database with the specified nam exists in this AppData
-     *
-     * @param string $name database name
-     *
-     * @return boolean
-     */
-    public function hasDatabase($name)
-    {
-        foreach ($this->dbList as $db) {
-            if ($db->getName() === $name) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Add a database to the list and sets the AppData property to this
-     * AppData
-     *
-     * @param Database|string $db the database to add
-     *
-     * @return Database
-     */
-    public function addDatabase($db)
-    {
-        if ($db instanceof Database) {
-            $db->setAppData($this);
-            if ($db->getPlatform() === null) {
-                if ($config = $this->getGeneratorConfig()) {
-                    $pf = $config->getConfiguredPlatform(null, $db->getName());
-                    $db->setPlatform($pf ? $pf : $this->platform);
-                } else {
-                    $db->setPlatform($this->platform);
-                }
-            }
-            $this->dbList[] = $db;
-
-            return $db;
-        } else {
-            // XML attributes array / hash
-            $d = new Database();
-            $d->setAppData($this);
-            $d->loadFromXML($db);
-
-            return $this->addDatabase($d); // calls self w/ different param type
-        }
-    }
-
-    public function doFinalInitialization()
-    {
-        if (!$this->isInitialized) {
-            for ($i = 0, $size = count($this->dbList); $i < $size; $i++) {
-                $this->dbList[$i]->doFinalInitialization();
-            }
-            $this->isInitialized = true;
-        }
     }
 
     /**
@@ -297,6 +167,133 @@ class AppData
     }
 
     /**
+     * Return an array of all databases
+     *
+     * @return Database[]
+     */
+    public function getDatabases($doFinalInit = true)
+    {
+        // this is temporary until we'll have a clean solution
+        // for packaging datamodels/requiring schemas
+        if ($doFinalInit) {
+            $this->doFinalInitialization();
+        }
+
+        return $this->dbList;
+    }
+
+    public function doFinalInitialization()
+    {
+        if (!$this->isInitialized) {
+            for ($i = 0, $size = count($this->dbList); $i < $size; $i++) {
+                $this->dbList[$i]->doFinalInitialization();
+            }
+            $this->isInitialized = true;
+        }
+    }
+
+    /**
+     * Checks whether a database with the specified nam exists in this AppData
+     *
+     * @param string $name database name
+     *
+     * @return boolean
+     */
+    public function hasDatabase($name)
+    {
+        foreach ($this->dbList as $db) {
+            if ($db->getName() === $name) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Return the database with the specified name.
+     *
+     * @param string $name database name
+     * @param bool $doFinalInit
+     *
+     * @return Database|null
+     */
+    public function getDatabase($name = null, $doFinalInit = true)
+    {
+        // this is temporary until we'll have a clean solution
+        // for packaging datamodels/requiring schemas
+        if ($doFinalInit) {
+            $this->doFinalInitialization();
+        }
+
+        if ($name === null) {
+            return $this->dbList[0];
+        }
+
+        for ($i = 0, $size = count($this->dbList); $i < $size; $i++) {
+            $db = $this->dbList[$i];
+            if ($db->getName() === $name) {
+                return $db;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Add a database to the list and sets the AppData property to this
+     * AppData
+     *
+     * @param Database|string $db the database to add
+     *
+     * @return Database
+     */
+    public function addDatabase($db)
+    {
+        if ($db instanceof Database) {
+            $db->setAppData($this);
+            if ($db->getPlatform() === null) {
+                if ($config = $this->getGeneratorConfig()) {
+                    $pf = $config->getConfiguredPlatform(null, $db->getName());
+                    $db->setPlatform($pf ? $pf : $this->platform);
+                } else {
+                    $db->setPlatform($this->platform);
+                }
+            }
+            $this->dbList[] = $db;
+
+            return $db;
+        } else {
+            // XML attributes array / hash
+            $d = new Database();
+            $d->setAppData($this);
+            $d->loadFromXML($db);
+
+            return $this->addDatabase($d); // calls self w/ different param type
+        }
+    }
+
+    /**
+     * Get the generator configuration
+     *
+     * @return GeneratorConfig
+     */
+    public function getGeneratorConfig()
+    {
+        return $this->generatorConfig;
+    }
+
+    /**
+     * Set the generator configuration
+     *
+     * @param GeneratorConfigInterface $generatorConfig
+     */
+    public function setGeneratorConfig(GeneratorConfigInterface $generatorConfig)
+    {
+        $this->generatorConfig = $generatorConfig;
+    }
+
+    /**
      * Returns the number of tables in all the databases of this AppData object
      *
      * @return integer
@@ -309,6 +306,16 @@ class AppData
         }
 
         return $nb;
+    }
+
+    /**
+     * Magic string method
+     *
+     * @see toString()
+     */
+    public function __toString()
+    {
+        return $this->toString();
     }
 
     /**
@@ -329,15 +336,5 @@ class AppData
         $result .= "</app-data>";
 
         return $result;
-    }
-
-    /**
-     * Magic string method
-     *
-     * @see toString()
-     */
-    public function __toString()
-    {
-        return $this->toString();
     }
 }

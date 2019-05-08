@@ -23,7 +23,7 @@ require_once dirname(__FILE__) . '/Rule.php';
 class Validator extends XMLElement
 {
 
-    const TRANSLATE_NONE = "none";
+    const TRANSLATE_NONE    = "none";
     const TRANSLATE_GETTEXT = "gettext";
 
     /**
@@ -38,7 +38,7 @@ class Validator extends XMLElement
      *
      * @var        array Rule[]
      */
-    private $ruleList = array();
+    private $ruleList = [];
 
     /**
      * The translation mode.
@@ -53,17 +53,6 @@ class Validator extends XMLElement
      * @var        Table
      */
     private $table;
-
-    /**
-     * Sets up the Validator object based on the attributes that were passed to loadFromXML().
-     *
-     * @see        parent::loadFromXML()
-     */
-    protected function setupObject()
-    {
-        $this->column = $this->getTable()->getColumn($this->getAttribute("column"));
-        $this->translate = $this->getAttribute("translate", $this->getTable()->getDatabase()->getDefaultTranslateMethod());;
-    }
 
     /**
      * Add a Rule to this validator.
@@ -103,13 +92,13 @@ class Validator extends XMLElement
     }
 
     /**
-     * Gets the name of the column that this Validator applies to.
+     * Gets the Column object that this validator applies to.
      *
-     * @return string
+     * @return Column
      */
-    public function getColumnName()
+    public function getColumn()
     {
-        return $this->column->getName();
+        return $this->column;
     }
 
     /**
@@ -125,33 +114,14 @@ class Validator extends XMLElement
     }
 
     /**
-     * Gets the Column object that this validator applies to.
+     * Get the translation mode to use for the message.
+     * Currently only "gettext" and "none" are supported.  The default is "none".
      *
-     * @return Column
+     * @return string Translation method ("gettext", "none").
      */
-    public function getColumn()
+    public function getTranslate()
     {
-        return $this->column;
-    }
-
-    /**
-     * Set the owning Table.
-     *
-     * @param Table $table
-     */
-    public function setTable(Table $table)
-    {
-        $this->table = $table;
-    }
-
-    /**
-     * Get the owning Table.
-     *
-     * @return Table
-     */
-    public function getTable()
-    {
-        return $this->table;
+        return $this->translate;
     }
 
     /**
@@ -163,17 +133,6 @@ class Validator extends XMLElement
     public function setTranslate($method)
     {
         $this->translate = $method;
-    }
-
-    /**
-     * Get the translation mode to use for the message.
-     * Currently only "gettext" and "none" are supported.  The default is "none".
-     *
-     * @return string Translation method ("gettext", "none").
-     */
-    public function getTranslate()
-    {
-        return $this->translate;
     }
 
     /**
@@ -193,5 +152,46 @@ class Validator extends XMLElement
         foreach ($this->ruleList as $rule) {
             $rule->appendXml($valNode);
         }
+    }
+
+    /**
+     * Gets the name of the column that this Validator applies to.
+     *
+     * @return string
+     */
+    public function getColumnName()
+    {
+        return $this->column->getName();
+    }
+
+    /**
+     * Sets up the Validator object based on the attributes that were passed to loadFromXML().
+     *
+     * @see        parent::loadFromXML()
+     */
+    protected function setupObject()
+    {
+        $this->column    = $this->getTable()->getColumn($this->getAttribute("column"));
+        $this->translate = $this->getAttribute("translate", $this->getTable()->getDatabase()->getDefaultTranslateMethod());;
+    }
+
+    /**
+     * Get the owning Table.
+     *
+     * @return Table
+     */
+    public function getTable()
+    {
+        return $this->table;
+    }
+
+    /**
+     * Set the owning Table.
+     *
+     * @param Table $table
+     */
+    public function setTable(Table $table)
+    {
+        $this->table = $table;
     }
 }

@@ -54,16 +54,6 @@ class PropelGraphvizTask extends AbstractPropelDataModelTask
     }
 
     /**
-     * Set the sqldbmap.
-     *
-     * @param PhingFile $sqldbmap The db map.
-     */
-    public function setSqlDbMap(PhingFile $sqldbmap)
-    {
-        $this->sqldbmap = $sqldbmap;
-    }
-
-    /**
      * Get the sqldbmap.
      *
      * @return PhingFile $sqldbmap.
@@ -74,13 +64,13 @@ class PropelGraphvizTask extends AbstractPropelDataModelTask
     }
 
     /**
-     * Set the database name.
+     * Set the sqldbmap.
      *
-     * @param string $database
+     * @param PhingFile $sqldbmap The db map.
      */
-    public function setDatabase($database)
+    public function setSqlDbMap(PhingFile $sqldbmap)
     {
-        $this->database = $database;
+        $this->sqldbmap = $sqldbmap;
     }
 
     /**
@@ -91,6 +81,16 @@ class PropelGraphvizTask extends AbstractPropelDataModelTask
     public function getDatabase()
     {
         return $this->database;
+    }
+
+    /**
+     * Set the database name.
+     *
+     * @param string $database
+     */
+    public function setDatabase($database)
+    {
+        $this->database = $database;
     }
 
     public function main()

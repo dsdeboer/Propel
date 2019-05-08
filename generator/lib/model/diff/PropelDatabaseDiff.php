@@ -20,26 +20,16 @@ require_once dirname(__FILE__) . '/PropelTableDiff.php';
  */
 class PropelDatabaseDiff
 {
-    protected $addedTables = array();
-    protected $removedTables = array();
-    protected $modifiedTables = array();
-    protected $renamedTables = array();
-
-    /**
-     * Setter for the addedTables property
-     *
-     * @param array $addedTables
-     */
-    public function setAddedTables($addedTables)
-    {
-        $this->addedTables = $addedTables;
-    }
+    protected $addedTables    = [];
+    protected $removedTables  = [];
+    protected $modifiedTables = [];
+    protected $renamedTables  = [];
 
     /**
      * Add an added table
      *
      * @param string $tableName
-     * @param Table  $addedTable
+     * @param Table $addedTable
      */
     public function addAddedTable($tableName, Table $addedTable)
     {
@@ -57,26 +47,6 @@ class PropelDatabaseDiff
     }
 
     /**
-     * Getter for the addedTables property
-     *
-     * @return array
-     */
-    public function getAddedTables()
-    {
-        return $this->addedTables;
-    }
-
-    /**
-     * Get the number of added tables
-     *
-     * @return integer
-     */
-    public function countAddedTables()
-    {
-        return count($this->addedTables);
-    }
-
-    /**
      * Get an added table
      *
      * @param string $tableName
@@ -89,20 +59,10 @@ class PropelDatabaseDiff
     }
 
     /**
-     * Setter for the removedTables property
-     *
-     * @param array $removedTables
-     */
-    public function setRemovedTables($removedTables)
-    {
-        $this->removedTables = $removedTables;
-    }
-
-    /**
      * Add a removed table
      *
      * @param string $tableName
-     * @param Table  $removedTable
+     * @param Table $removedTable
      */
     public function addRemovedTable($tableName, Table $removedTable)
     {
@@ -120,26 +80,6 @@ class PropelDatabaseDiff
     }
 
     /**
-     * Getter for the removedTables property
-     *
-     * @return array
-     */
-    public function getRemovedTables()
-    {
-        return $this->removedTables;
-    }
-
-    /**
-     * Get the number of removed tables
-     *
-     * @return integer
-     */
-    public function countRemovedTables()
-    {
-        return count($this->removedTables);
-    }
-
-    /**
      * Get a removed table
      *
      * @param string $tableName
@@ -152,54 +92,14 @@ class PropelDatabaseDiff
     }
 
     /**
-     * Setter for the modifiedTables property
-     *
-     * @param array $modifiedTables
-     */
-    public function setModifiedTables($modifiedTables)
-    {
-        $this->modifiedTables = $modifiedTables;
-    }
-
-    /**
      * Add a table difference
      *
-     * @param string          $tableName
+     * @param string $tableName
      * @param PropelTableDiff $modifiedTable
      */
     public function addModifiedTable($tableName, PropelTableDiff $modifiedTable)
     {
         $this->modifiedTables[$tableName] = $modifiedTable;
-    }
-
-    /**
-     * Get the number of modified tables
-     *
-     * @return integer
-     */
-    public function countModifiedTables()
-    {
-        return count($this->modifiedTables);
-    }
-
-    /**
-     * Getter for the modifiedTables property
-     *
-     * @return array
-     */
-    public function getModifiedTables()
-    {
-        return $this->modifiedTables;
-    }
-
-    /**
-     * Setter for the renamedTables property
-     *
-     * @param array $renamedTables
-     */
-    public function setRenamedTables($renamedTables)
-    {
-        $this->renamedTables = $renamedTables;
     }
 
     /**
@@ -211,26 +111,6 @@ class PropelDatabaseDiff
     public function addRenamedTable($fromName, $toName)
     {
         $this->renamedTables[$fromName] = $toName;
-    }
-
-    /**
-     * Getter for the renamedTables property
-     *
-     * @return array
-     */
-    public function getRenamedTables()
-    {
-        return $this->renamedTables;
-    }
-
-    /**
-     * Get the number of renamed tables
-     *
-     * @return integer
-     */
-    public function countRenamedTables()
-    {
-        return count($this->renamedTables);
     }
 
     /**
@@ -251,7 +131,7 @@ class PropelDatabaseDiff
         }
         $diff->setRemovedTables($this->getAddedTables());
         $diff->setRenamedTables(array_flip($this->getRenamedTables()));
-        $tableDiffs = array();
+        $tableDiffs = [];
         foreach ($this->getModifiedTables() as $name => $tableDiff) {
             $tableDiffs[$name] = $tableDiff->getReverseDiff();
         }
@@ -261,13 +141,93 @@ class PropelDatabaseDiff
     }
 
     /**
+     * Getter for the removedTables property
+     *
+     * @return array
+     */
+    public function getRemovedTables()
+    {
+        return $this->removedTables;
+    }
+
+    /**
+     * Setter for the removedTables property
+     *
+     * @param array $removedTables
+     */
+    public function setRemovedTables($removedTables)
+    {
+        $this->removedTables = $removedTables;
+    }
+
+    /**
+     * Getter for the addedTables property
+     *
+     * @return array
+     */
+    public function getAddedTables()
+    {
+        return $this->addedTables;
+    }
+
+    /**
+     * Setter for the addedTables property
+     *
+     * @param array $addedTables
+     */
+    public function setAddedTables($addedTables)
+    {
+        $this->addedTables = $addedTables;
+    }
+
+    /**
+     * Getter for the renamedTables property
+     *
+     * @return array
+     */
+    public function getRenamedTables()
+    {
+        return $this->renamedTables;
+    }
+
+    /**
+     * Setter for the renamedTables property
+     *
+     * @param array $renamedTables
+     */
+    public function setRenamedTables($renamedTables)
+    {
+        $this->renamedTables = $renamedTables;
+    }
+
+    /**
+     * Getter for the modifiedTables property
+     *
+     * @return array
+     */
+    public function getModifiedTables()
+    {
+        return $this->modifiedTables;
+    }
+
+    /**
+     * Setter for the modifiedTables property
+     *
+     * @param array $modifiedTables
+     */
+    public function setModifiedTables($modifiedTables)
+    {
+        $this->modifiedTables = $modifiedTables;
+    }
+
+    /**
      * Get a description of the database modifications
      *
      * @return string
      */
     public function getDescription()
     {
-        $changes = array();
+        $changes = [];
         if ($count = $this->countAddedTables()) {
             $changes[] = sprintf('%d added tables', $count);
         }
@@ -282,6 +242,46 @@ class PropelDatabaseDiff
         }
 
         return implode(', ', $changes);
+    }
+
+    /**
+     * Get the number of added tables
+     *
+     * @return integer
+     */
+    public function countAddedTables()
+    {
+        return count($this->addedTables);
+    }
+
+    /**
+     * Get the number of removed tables
+     *
+     * @return integer
+     */
+    public function countRemovedTables()
+    {
+        return count($this->removedTables);
+    }
+
+    /**
+     * Get the number of modified tables
+     *
+     * @return integer
+     */
+    public function countModifiedTables()
+    {
+        return count($this->modifiedTables);
+    }
+
+    /**
+     * Get the number of renamed tables
+     *
+     * @return integer
+     */
+    public function countRenamedTables()
+    {
+        return count($this->renamedTables);
     }
 
     public function __toString()
