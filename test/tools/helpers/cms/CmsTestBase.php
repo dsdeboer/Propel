@@ -9,7 +9,7 @@
  */
 
 require_once __DIR__ . '/../../../../runtime/lib/Propel.php';
-set_include_path(get_include_path() . PATH_SEPARATOR . dirname(__DIR__, 3) . '/fixtures/bookstore/build/classes');
+set_include_path(get_include_path() . PATH_SEPARATOR . dirname(dirname(dirname(__DIR__))) . '/fixtures/bookstore/build/classes');
 Propel::init(__DIR__ . '/../../../fixtures/bookstore/build/conf/bookstore-conf.php');
 include_once __DIR__ . '/CmsDataPopulator.php';
 
