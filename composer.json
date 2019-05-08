@@ -17,7 +17,7 @@
     "phing/phing": "~2.4"
   },
   "replace": {
-    "propel/propel1": "*"
+    "propel/propel1": "1.7.*"
   },
   "require-dev": {
     "pear-pear.php.net/PEAR_PackageFileManager2": "@stable"

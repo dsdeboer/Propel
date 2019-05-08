@@ -9,3 +9,4 @@ composer.lock
 composer.phar
 generator/pear/build/
 runtime/pear/build/
+.idea/
