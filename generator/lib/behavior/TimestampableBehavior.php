@@ -1,117 +1,19 @@
 <?php
-
 /**
- * This file is part of the Propel package.
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+ * Created by aXtion B.V.
+ * Date: 8-9-2016
  *
- * @license    MIT License
+ * @author Duncan de Boer <duncan.de.boer@axtion.nl>
  */
 
-/**
- * Gives a model class the ability to track creation and last modification dates
- * Uses two additional columns storing the creation and update date
- *
- * @author     François Zaninotto
- * @version    $Revision$
- * @package    propel.generator.behavior
- */
 class TimestampableBehavior extends Behavior
 {
     // default parameters value
-    protected $parameters = array(
+    protected $parameters = [
         'create_column'      => 'created_at',
         'update_column'      => 'updated_at',
         'disable_updated_at' => 'false',
-    );
-
-    /**
-     * Add the create_column and update_columns to the current table
-     */
-    public function modifyTable()
-    {
-        if (!$this->getTable()->containsColumn($this->getParameter('create_column'))) {
-            $this->getTable()->addColumn(array(
-                'name' => $this->getParameter('create_column'),
-                'type' => 'TIMESTAMP'
-            ));
-        }
-
-        if ($this->withUpdatedAt()) {
-            if (!$this->getTable()->containsColumn($this->getParameter('update_column'))) {
-                $this->getTable()->addColumn(array(
-                    'name' => $this->getParameter('update_column'),
-                    'type' => 'TIMESTAMP'
-                ));
-            }
-        }
-    }
-
-    /**
-     * Get the setter of one of the columns of the behavior
-     *
-     * @param string $column One of the behavior columns, 'create_column' or 'update_column'
-     *
-     * @return string The related setter, 'setCreatedOn' or 'setUpdatedOn'
-     */
-    protected function getColumnSetter($column)
-    {
-        return 'set' . $this->getColumnForParameter($column)->getPhpName();
-    }
-
-    /**
-     * Return the constant for a given column.
-     *
-     * @param string    $columnName
-     * @param OMBuilder $builder
-     *
-     * @return string
-     */
-    protected function getColumnConstant($columnName, OMBuilder $builder)
-    {
-        return $builder->getColumnConstant($this->getColumnForParameter($columnName));
-    }
-
-    /**
-     * Add code in ObjectBuilder::preUpdate
-     *
-     * @param PHP5ObjectBuilder $builder
-     *
-     * @return string The code to put at the hook
-     */
-    public function preUpdate(PHP5ObjectBuilder $builder)
-    {
-        if ($this->withUpdatedAt()) {
-            return "if (\$this->isModified() && !\$this->isColumnModified(" . $this->getColumnConstant('update_column', $builder) . ")) {
-    \$this->" . $this->getColumnSetter('update_column') . "(time());
-}";
-        }
-
-        return '';
-    }
-
-    /**
-     * Add code in ObjectBuilder::preInsert
-     *
-     * @param PHP5ObjectBuilder $builder
-     *
-     * @return string The code to put at the hook
-     */
-    public function preInsert(PHP5ObjectBuilder $builder)
-    {
-        $script = "if (!\$this->isColumnModified(" . $this->getColumnConstant('create_column', $builder) . ")) {
-    \$this->" . $this->getColumnSetter('create_column') . "(time());
-}";
-
-        if ($this->withUpdatedAt()) {
-            $script .= "
-if (!\$this->isColumnModified(" . $this->getColumnConstant('update_column', $builder) . ")) {
-    \$this->" . $this->getColumnSetter('update_column') . "(time());
-}";
-        }
-
-        return $script;
-    }
+    ];
 
     public function objectMethods(PHP5ObjectBuilder $builder)
     {
@@ -132,11 +34,29 @@ public function keepUpdateDateUnchanged()
         }
     }
 
+    protected function withUpdatedAt()
+    {
+        return 'true' !== $this->getParameter('disable_updated_at');
+    }
+
+    /**
+     * Return the constant for a given column.
+     *
+     * @param string $columnName
+     * @param OMBuilder $builder
+     *
+     * @return string
+     */
+    protected function getColumnConstant($columnName, OMBuilder $builder)
+    {
+        return $builder->getColumnConstant($this->getColumnForParameter($columnName));
+    }
+
     public function queryMethods(QueryBuilder $builder)
     {
         $script = '';
 
-        $queryClassName = $builder->getStubQueryBuilder()->getClassname();
+        $queryClassName       = $builder->getStubQueryBuilder()->getClassname();
         $createColumnConstant = $this->getColumnConstant('create_column', $builder);
 
         if ($this->withUpdatedAt()) {
@@ -213,8 +133,53 @@ public function firstCreatedFirst()
         return $script;
     }
 
-    protected function withUpdatedAt()
+    public function preInsert(PHP5ObjectBuilder $builder)
     {
-        return 'true' !== $this->getParameter('disable_updated_at');
+    }
+
+    /**
+     * Add the create_column and update_columns to the current table
+     */
+    public function modifyTable()
+    {
+        $this->addColumn($this->getParameter('create_column'));
+
+        if ($this->withUpdatedAt()) {
+            $this->addColumn($this->getParameter('update_column'));
+        }
+    }
+
+    private function addColumn($name)
+    {
+        if (!$this->getTable()->hasColumn($name)) {
+            $this->getTable()->addColumn([
+                'name' => $name,
+                'type' => 'TIMESTAMP'
+            ]);
+        }
+        $column = $this->getTable()->getColumn($name);
+        $this->getTable()->removeColumn($name);
+
+        $column->setNotNull(true);
+        $column->setDefaultValue(new ColumnDefaultValue('CURRENT_TIMESTAMP', ColumnDefaultValue::TYPE_EXPR));
+        $column->setType('TIMESTAMP');
+        $this->getTable()->addColumn($column);
+    }
+
+    public function preUpdate(PHP5ObjectBuilder $builder)
+    {
+        return '';
+    }
+
+    /**
+     * Get the setter of one of the columns of the behavior
+     *
+     * @param string $column One of the behavior columns, 'create_column' or 'update_column'
+     *
+     * @return string The related setter, 'setCreatedOn' or 'setUpdatedOn'
+     */
+    protected function getColumnSetter($column)
+    {
+        return 'set' . $this->getColumnForParameter($column)->getPhpName();
     }
 }

@@ -8,9 +8,6 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../builder/util/XmlToAppData.php';
-require_once dirname(__FILE__) . '/PropelSQLParser.php';
-
 class PropelQuickBuilder
 {
     protected $schema, $platform, $config, $database;
