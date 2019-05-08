@@ -27,11 +27,11 @@
         "generator/lib"
     ],
     "require": {
-        "php": ">=5.2.4",
+        "php": ">=5.6.4,<=7.1",
         "phing/phing": "~2.4"
     },
     "replace": {
-        "propel/propel1": "1.7.*"
+        "propel/propel1": "*"
     },
     "require-dev": {
         "pear-pear.php.net/PEAR_PackageFileManager2": "@stable"
