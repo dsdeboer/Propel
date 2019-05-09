@@ -120,7 +120,7 @@ class PropelSQLParser
         $this->pos     = 0;
         $sqlStatements = [];
         while ($sqlStatement = $this->getNextStatement()) {
-            $sqlStatements[] = $sqlStatement;
+            $sqlStatements[] = str_replace("#\n", ";\n", $sqlStatement);
         }
 
         return $sqlStatements;

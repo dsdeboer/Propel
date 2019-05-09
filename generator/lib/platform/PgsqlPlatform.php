@@ -284,9 +284,9 @@ ALTER TABLE %s ALTER COLUMN %s;
         return PHP_EOL . sprintf('CREATE OR REPLACE FUNCTION %s.trigger_set_timestamp()
     RETURNS TRIGGER AS 
 $body$
-BEGIN
-    NEW.updated_at = NOW()
-    RETURN NEW
+BEGIN 
+    NEW.updated_at = NOW()#
+    RETURN NEW#
 END
 $body$ LANGUAGE plpgsql;', $schemaName) . PHP_EOL;
     }
