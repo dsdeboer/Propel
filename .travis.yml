@@ -1,6 +1,13 @@
 language: php
 dist: trusty
 
+cache:
+  directories:
+    - $HOME/.cache/composer
+    - $HOME/.composer/cache
+    - $HOME/.composer/cache/files
+    - $HOME/symfony-bridge/.phpunit
+
 php:
   - 5.4
   - 5.5

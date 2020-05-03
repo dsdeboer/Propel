@@ -1,20 +1,19 @@
 {
-  "name": "propel/propel1",
+  "name": "dsdeboer/propel1",
   "description": "Propel is an open-source Object-Relational Mapping (ORM) for PHP5.",
   "keywords": ["orm", "active record", "mapping", "database", "persistence"],
   "homepage": "http://www.propelorm.org/",
   "license": "MIT",
   "authors": [{
-    "name": "William Durand",
-    "email": "william.durand1@gmail.com",
-    "homepage": "http://www.willdurand.fr"
+    "name": "Duncan de Boer",
+    "email": "duncan@charpand.nl"
   }],
   "autoload": {
       "classmap": ["runtime/lib", "generator/lib"]
   },
   "include-path": ["runtime/lib", "generator/lib"],
   "require": {
-    "php": ">=5.2.4",
+    "php": "^5.6||^7.0, <7.1",
     "phing/phing": "~2.4"
   },
   "require-dev": {
@@ -25,6 +24,13 @@
     "branch-alias": {
       "dev-master": "1.7-dev"
     }
+  },
+  "config": {
+    "platform": {
+      "php": "7.0"
+    },
+    "optimize-autoloader": true,
+    "sort-packages": true
   },
   "repositories": [
     {
