@@ -1,0 +1,16 @@
+parameters:
+    php_version_features: '5.4'
+    autoload_paths:
+        - '/project/vendor/autoload.php'
+    sets:
+        - 'php53'
+        - 'php54'
+        - 'php55'
+        - 'php56'
+        - 'php70'
+        - 'phpunit50'
+        - 'phpunit60'
+    paths:
+        - '/project/generator'
+        - '/project/runtime'
+        - '/project/test'

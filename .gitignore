@@ -11,3 +11,4 @@ runtime/pear/build/
 .idea/
 *.phar
 .php-version
+*.sh
