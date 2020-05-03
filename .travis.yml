@@ -7,7 +7,6 @@ php:
   - 5.6
   - 7.0
   - 7.1
-  - hhvm
 
 env:
   - DB=mysql DB_USER=root
@@ -18,8 +17,7 @@ before_script:
   - sh -c "if [ '$DB' = 'mysql' ]; then mysql -e 'CREATE DATABASE test; CREATE SCHEMA bookstore_schemas; CREATE SCHEMA contest; CREATE SCHEMA second_hand_books; CREATE DATABASE reverse_bookstore;'; fi"
 
   # Composer
-  - wget http://getcomposer.org/composer.phar
-  - php composer.phar install --prefer-source
+  - composer install --prefer-dist
 
   - ./test/reset_tests.sh
 
@@ -29,5 +27,3 @@ matrix:
   include:
     - php: 5.3
       dist: precise
-  allow_failures:
-    - php: hhvm
