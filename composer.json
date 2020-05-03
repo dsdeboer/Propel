@@ -13,7 +13,7 @@
   },
   "include-path": ["runtime/lib", "generator/lib"],
   "require": {
-    "php": ">=5.3.20 || ^7.*",
+    "php": ">=5.3.20 || 7.*",
     "phing/phing": "~2.4"
   },
   "require-dev": {
